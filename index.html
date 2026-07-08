@@ -1,0 +1,1807 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>CIPHER HORIZON — The Elliptic Frontier</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Spectral:wght@400;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0b0e1a; --bg2:#070911;
+  --panel:#131a2e; --panel2:#1b2438; --panel-border:#2b334d;
+  --gold:#b8860b; --gold-bright:#e8b23d;
+  --violet:#5b3fbf; --violet-bright:#8f7bff;
+  --cyan:#28e0c6; --coral:#e24e4e;
+  --text:#eae7dc; --text-dim:#93a0bf; --text-dim2:#5c6584;
+  --serif:'Spectral',serif; --sans:'Inter',sans-serif; --mono:'JetBrains Mono',monospace;
+}
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;height:100%;background:var(--bg);color:var(--text);font-family:var(--sans);
+  overflow:hidden;overscroll-behavior:none;}
+#bgfx{position:fixed;inset:0;width:100%;height:100%;z-index:0;}
+#app{position:relative;z-index:1;width:100%;height:100%;overflow:auto;overscroll-behavior-y:contain;-webkit-overflow-scrolling:touch;}
+::-webkit-scrollbar{width:10px;}
+::-webkit-scrollbar-thumb{background:var(--panel-border);border-radius:6px;}
+::-webkit-scrollbar-track{background:transparent;}
+
+.scene{display:none;min-height:100%;width:100%;flex-direction:column;align-items:center;padding:40px 20px 80px;}
+.scene.active{display:flex;animation:fadeIn .6s ease;}
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);}}
+
+/* ---------- HUD ---------- */
+#hud{position:fixed;top:0;left:0;right:0;z-index:5;display:flex;justify-content:space-between;align-items:center;
+  padding:14px 26px;background:linear-gradient(180deg,rgba(7,9,17,.92),rgba(7,9,17,0));pointer-events:none;}
+#hud > *{pointer-events:auto;}
+.hud-left{display:flex;align-items:center;gap:14px;font-family:var(--mono);font-size:13px;color:var(--text-dim);}
+.hud-title{font-family:var(--serif);font-size:18px;color:var(--gold-bright);letter-spacing:.5px;cursor:pointer;}
+.xp-pill{background:var(--panel);border:1px solid var(--panel-border);border-radius:20px;padding:5px 14px;display:flex;align-items:center;gap:6px;}
+.xp-pill b{color:var(--cyan);}
+.mode-badge{border-radius:20px;padding:5px 12px;font-family:var(--mono);font-size:11px;letter-spacing:1px;font-weight:700;text-transform:uppercase;}
+.mode-badge.real{background:rgba(91,63,191,.25);color:var(--violet-bright);border:1px solid var(--violet);}
+.mode-badge.analogy{background:rgba(184,134,11,.22);color:var(--gold-bright);border:1px solid var(--gold);}
+.hud-right{display:flex;gap:10px;}
+.icon-btn{width:38px;height:38px;border-radius:10px;background:var(--panel);border:1px solid var(--panel-border);color:var(--text-dim);
+  display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:16px;transition:.2s;}
+.icon-btn:hover{border-color:var(--violet);color:var(--violet-bright);}
+
+/* ---------- Buttons / panels ---------- */
+.btn{font-family:var(--sans);font-weight:600;font-size:14px;border-radius:10px;padding:12px 22px;border:1px solid var(--panel-border);
+  background:var(--panel2);color:var(--text);cursor:pointer;transition:.18s;}
+.btn:hover{border-color:var(--violet-bright);color:#fff;transform:translateY(-1px);box-shadow:0 6px 18px rgba(91,63,191,.25);}
+.btn.primary{background:linear-gradient(135deg,var(--violet),#4029a0);border-color:var(--violet-bright);color:#fff;}
+.btn.gold{background:linear-gradient(135deg,var(--gold),#8a6408);border-color:var(--gold-bright);color:#1a1300;}
+.btn.admin{background:linear-gradient(135deg,var(--cyan),#1a8a7a);border-color:var(--cyan);color:#000;}
+.btn:disabled{opacity:.35;cursor:not-allowed;transform:none;box-shadow:none;}
+.panel{background:var(--panel);border:1px solid var(--panel-border);border-radius:16px;padding:22px;}
+.panel-title{font-family:var(--serif);font-size:15px;color:var(--gold-bright);text-transform:uppercase;letter-spacing:1.5px;margin:0 0 12px;}
+.tag{display:inline-block;font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;
+  border-radius:6px;padding:3px 8px;margin-bottom:10px;}
+.tag.real{background:rgba(91,63,191,.22);color:var(--violet-bright);border:1px solid var(--violet);}
+.tag.analogy{background:rgba(184,134,11,.2);color:var(--gold-bright);border:1px solid var(--gold);}
+.plain{font-family:var(--sans);font-size:13.5px;color:var(--text-dim);border-top:1px dashed var(--panel-border);padding-top:10px;margin-top:14px;}
+.mono{font-family:var(--mono);}
+
+/* ---------- Title Screen ---------- */
+#scene-title{justify-content:center;text-align:center;}
+.title-logo{font-family:var(--serif);font-weight:700;font-size:min(9vw,72px);letter-spacing:2px;
+  background:linear-gradient(135deg,var(--gold-bright),#fff2cf 40%,var(--violet-bright));
+  -webkit-background-clip:text;background-clip:text;color:transparent;margin:0;}
+.title-sub{font-family:var(--serif);font-style:italic;color:var(--violet-bright);font-size:20px;margin:6px 0 30px;}
+.title-tagline{max-width:560px;color:var(--text-dim);font-size:14.5px;line-height:1.7;margin-bottom:36px;}
+.title-actions{display:flex;gap:14px;flex-wrap:wrap;justify-content:center;}
+
+/* ---------- Identificação ---------- */
+#scene-id .panel{max-width:440px;width:100%;}
+.field{margin-bottom:12px;}
+.field label{display:block;font-size:12px;color:var(--text-dim);margin-bottom:4px;font-family:var(--mono);text-transform:uppercase;letter-spacing:.5px;}
+.field input,.field select{width:100%;background:#0f1526;border:1px solid var(--panel-border);border-radius:8px;padding:10px 12px;color:var(--text);font-family:var(--mono);font-size:13.5px;}
+.field input:focus,.field select:focus{outline:none;border-color:var(--violet-bright);}
+
+/* ---------- Map ---------- */
+.map-wrap{width:100%;max-width:980px;margin-top:70px;}
+.map-title{font-family:var(--serif);font-size:26px;color:var(--gold-bright);margin-bottom:4px;}
+.map-sub{color:var(--text-dim);font-size:13px;margin-bottom:30px;}
+.node-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:18px;}
+.node{position:relative;background:var(--panel);border:1px solid var(--panel-border);border-radius:16px;padding:20px;cursor:pointer;transition:.2s;}
+.node:hover:not(.locked){border-color:var(--gold);transform:translateY(-3px);box-shadow:0 10px 24px rgba(184,134,11,.15);}
+.node.locked{opacity:.4;cursor:not-allowed;}
+.node.done{border-color:var(--cyan);}
+.node-num{font-family:var(--mono);color:var(--text-dim2);font-size:12px;}
+.node-name{font-family:var(--serif);font-size:17px;margin:6px 0;color:var(--text);}
+.node-concept{font-size:12px;color:var(--text-dim);}
+.node-check{position:absolute;top:14px;right:14px;color:var(--cyan);font-size:16px;}
+
+/* ---------- Mission ---------- */
+#scene-mission{align-items:stretch;padding-top:90px;max-width:1100px;margin:0 auto;width:100%;}
+.mission-topbar{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px;}
+.mission-name{font-family:var(--serif);font-size:24px;color:var(--gold-bright);}
+.mission-concept{font-family:var(--mono);font-size:12px;color:var(--text-dim);}
+.oracle-box{display:flex;gap:14px;background:var(--panel2);border:1px solid var(--panel-border);border-radius:14px;padding:16px 18px;margin:16px 0 22px;}
+.oracle-portrait{width:52px;height:52px;flex:0 0 auto;border-radius:50%;background:radial-gradient(circle at 35% 30%,var(--violet-bright),var(--violet) 55%,#2a1f66);
+  box-shadow:0 0 22px rgba(143,123,255,.55);}
+.oracle-text{font-size:14px;line-height:1.6;color:var(--text);}
+.oracle-name{font-family:var(--mono);font-size:11px;color:var(--violet-bright);letter-spacing:1px;text-transform:uppercase;margin-bottom:4px;}
+.mission-body{display:flex;flex-direction:column;gap:18px;width:100%;}
+.mission-footer{display:flex;justify-content:flex-end;margin-top:24px;}
+
+/* ---------- Disco de César ---------- */
+.disc-wrap{position:relative;width:min(320px,80vw);height:min(320px,80vw);margin:10px auto 6px;user-select:none;}
+.disc-outer{position:absolute;inset:0;border-radius:50%;background:radial-gradient(circle at 35% 30%,#241a05,#0f0b02 70%);
+  border:3px solid var(--gold);box-shadow:0 0 30px rgba(184,134,11,.25),inset 0 0 30px rgba(0,0,0,.6);}
+.disc-inner{position:absolute;top:16%;left:16%;width:68%;height:68%;border-radius:50%;
+  background:radial-gradient(circle at 35% 30%,#241340,#120a24 70%);border:3px solid var(--violet-bright);
+  box-shadow:0 0 24px rgba(143,123,255,.35),inset 0 0 24px rgba(0,0,0,.6);cursor:grab;touch-action:none;
+  transition:transform .25s cubic-bezier(.2,.8,.2,1);}
+.disc-inner.dragging{cursor:grabbing;transition:none;}
+.disc-letter{position:absolute;width:22px;height:22px;margin:-11px;display:flex;align-items:center;justify-content:center;
+  font-family:var(--mono);font-size:12px;font-weight:700;color:var(--gold-bright);pointer-events:none;}
+.disc-inner .disc-letter{color:var(--violet-bright);font-size:11px;}
+.disc-pointer{position:absolute;top:-8px;left:50%;transform:translateX(-50%);width:0;height:0;
+  border-left:8px solid transparent;border-right:8px solid transparent;border-top:12px solid var(--cyan);
+  filter:drop-shadow(0 0 6px var(--cyan));z-index:3;}
+.disc-center{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);display:flex;align-items:center;gap:10px;
+  background:var(--panel);border:1px solid var(--panel-border);border-radius:12px;padding:6px 8px;z-index:4;}
+.disc-stepbtn{width:26px;height:26px;border-radius:8px;border:1px solid var(--panel-border);background:var(--panel2);
+  color:var(--text);cursor:pointer;font-family:var(--mono);font-size:15px;line-height:1;}
+.disc-stepbtn:hover{border-color:var(--gold);}
+.disc-shift-value{font-family:var(--mono);font-size:18px;color:var(--cyan);min-width:22px;text-align:center;}
+.sub-table{display:grid;grid-template-columns:repeat(13,1fr);gap:3px;font-family:var(--mono);font-size:10.5px;
+  text-align:center;margin-top:6px;}
+.sub-table div{background:#0f1526;border-radius:4px;padding:3px 1px;color:var(--text-dim);}
+.sub-table div b{color:var(--gold-bright);}
+.disc-hint{text-align:center;font-size:11.5px;color:var(--text-dim2);margin-top:6px;font-family:var(--mono);}
+.freq-bars{display:flex;align-items:flex-end;gap:2px;height:70px;}
+.freq-bar{flex:1;background:var(--gold);opacity:.75;border-radius:2px 2px 0 0;}
+
+/* ---------- Outros componentes ---------- */
+.grid2{display:grid;grid-template-columns:1.1fr .9fr;gap:18px;}
+@media (max-width:820px){.grid2{grid-template-columns:1fr;}}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center;}
+.result-box{font-family:var(--mono);font-size:14px;background:#0f1526;border:1px solid var(--panel-border);border-radius:10px;padding:12px 14px;
+  word-break:break-all;color:var(--cyan);}
+.result-box.bad{color:var(--coral);}
+canvas.lab-canvas{width:100%;background:#0c1120;border:1px solid var(--panel-border);border-radius:12px;}
+
+/* ---------- Quiz ---------- */
+#quiz-overlay{position:fixed;inset:0;background:rgba(5,6,12,.86);backdrop-filter:blur(4px);z-index:20;
+  display:flex;align-items:center;justify-content:center;}
+#quiz-overlay.hidden{display:none;}
+.quiz-card{width:min(560px,92vw);background:var(--panel);border:1px solid var(--panel-border);border-radius:18px;padding:26px;}
+.quiz-progress{font-family:var(--mono);font-size:11px;color:var(--text-dim);margin-bottom:10px;}
+.quiz-q{font-family:var(--serif);font-size:19px;margin-bottom:16px;}
+.quiz-opt{display:block;width:100%;text-align:left;background:var(--panel2);border:1px solid var(--panel-border);border-radius:10px;
+  padding:12px 14px;margin-bottom:10px;color:var(--text);cursor:pointer;font-size:14px;transition:.15s;}
+.quiz-opt:hover{border-color:var(--violet-bright);}
+.quiz-opt.correct{border-color:var(--cyan);background:rgba(40,224,198,.12);}
+.quiz-opt.wrong{border-color:var(--coral);background:rgba(226,78,78,.12);}
+.quiz-explain{font-size:13px;color:var(--text-dim);margin-top:12px;line-height:1.6;border-top:1px dashed var(--panel-border);padding-top:12px;}
+
+/* ---------- Toast ---------- */
+#toast-container{position:fixed;bottom:22px;right:22px;z-index:50;display:flex;flex-direction:column;gap:10px;}
+.toast{background:var(--panel);border:1px solid var(--gold);border-radius:12px;padding:12px 16px;min-width:240px;
+  box-shadow:0 10px 26px rgba(0,0,0,.4);animation:slideIn .35s ease;}
+@keyframes slideIn{from{opacity:0;transform:translateX(30px);}to{opacity:1;transform:translateX(0);}}
+.toast-title{font-family:var(--mono);font-size:10px;color:var(--gold-bright);letter-spacing:1px;text-transform:uppercase;}
+.toast-body{font-family:var(--serif);font-size:14.5px;margin-top:2px;}
+
+/* ---------- CUDA grid ---------- */
+#cuda-grid{display:grid;grid-template-columns:repeat(40,1fr);gap:2px;width:100%;}
+#cuda-grid div{aspect-ratio:1;background:#1a2038;border-radius:1px;}
+#cuda-grid div.hit{background:var(--violet-bright);}
+#cuda-grid div.on{background:var(--gold-bright);}
+
+/* ---------- Diário ---------- */
+#diaryList{display:flex;flex-direction:column;gap:12px;width:100%;}
+.diary-entry{background:var(--panel);border:1px solid var(--panel-border);border-radius:12px;padding:16px;}
+.diary-entry.locked{opacity:.35;}
+.diary-term{font-family:var(--serif);font-size:16px;color:var(--gold-bright);}
+.diary-def{font-size:13px;color:var(--text-dim);margin-top:4px;}
+
+/* ---------- Survey ---------- */
+#scene-survey .panel{max-width:640px;width:100%;}
+.radio-group{display:flex;gap:14px;flex-wrap:wrap;margin:8px 0;}
+.radio-group label{display:flex;align-items:center;gap:6px;font-size:14px;color:var(--text-dim);cursor:pointer;}
+.radio-group input[type="radio"]{accent-color:var(--cyan);width:16px;height:16px;}
+textarea{width:100%;background:#0f1526;border:1px solid var(--panel-border);border-radius:8px;padding:10px;color:var(--text);font-family:var(--mono);font-size:13px;resize:vertical;min-height:80px;}
+textarea:focus{outline:none;border-color:var(--violet-bright);}
+
+/* ---------- Admin ---------- */
+#scene-admin .panel{max-width:720px;width:100%;}
+#adminLoginView input{width:100%;max-width:280px;margin-bottom:10px;}
+#adminDashboardView .stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin:14px 0;}
+#adminDashboardView .stat-card{background:#0f1526;padding:12px;border-radius:8px;text-align:center;}
+#adminDashboardView .stat-card .num{font-family:var(--serif);font-size:28px;color:var(--cyan);}
+#adminDashboardView .stat-card .lbl{font-size:11px;color:var(--text-dim);}
+.admin-table{width:100%;border-collapse:collapse;font-size:12px;margin-top:10px;}
+.admin-table th{text-align:left;padding:6px;border-bottom:1px solid var(--panel-border);color:var(--cyan);font-family:var(--mono);font-size:10px;text-transform:uppercase;}
+.admin-table td{padding:6px;border-bottom:1px solid #1a2035;word-break:break-all;}
+
+/* ---------- End ---------- */
+.end-cert{max-width:640px;text-align:center;}
+.achievement-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px;margin:16px 0;}
+.ach-card{background:#0f1526;border:1px solid var(--panel-border);border-radius:10px;padding:10px 14px;font-size:12px;}
+.ach-card.unlocked{border-color:var(--gold);}
+.ach-card.locked{opacity:.4;}
+
+/* ---------- Boot Loader ---------- */
+#bootLoader{position:fixed;inset:0;z-index:100;background:var(--bg2);display:flex;align-items:center;justify-content:center;
+  flex-direction:column;transition:opacity .5s ease;}
+#bootLoader.hidden{opacity:0;pointer-events:none;}
+.boot-title{font-family:var(--serif);font-weight:700;font-size:min(8vw,44px);letter-spacing:3px;
+  background:linear-gradient(135deg,var(--gold-bright),#fff2cf 40%,var(--violet-bright));
+  -webkit-background-clip:text;background-clip:text;color:transparent;margin-bottom:8px;}
+.boot-sub{font-family:var(--mono);font-size:12px;color:var(--text-dim);letter-spacing:2px;text-transform:uppercase;margin-bottom:24px;}
+.boot-bar{width:220px;height:3px;background:var(--panel-border);border-radius:2px;overflow:hidden;}
+.boot-bar-fill{height:100%;width:0%;background:linear-gradient(90deg,var(--gold),var(--violet-bright));
+  box-shadow:0 0 12px var(--violet-bright);animation:bootFill 1.6s ease forwards;}
+@keyframes bootFill{0%{width:0%;}100%{width:100%;}}
+
+/* ---------- Pipeline ---------- */
+.pipeline-flow{display:flex;flex-direction:column;gap:10px;margin:10px 0;}
+.pipe-step{display:flex;align-items:center;gap:12px;background:#0f1526;border-radius:8px;padding:10px 14px;border-left:4px solid var(--panel-border);transition:.3s;}
+.pipe-step.active{border-left-color:var(--cyan);background:#141f30;}
+.pipe-step .step-icon{font-size:20px;width:30px;text-align:center;}
+.pipe-step .step-name{font-family:var(--mono);font-size:13px;color:var(--text);}
+.pipe-step .step-desc{font-size:11px;color:var(--text-dim);margin-left:auto;}
+.progress-bar{width:100%;height:8px;background:#0f1526;border-radius:4px;overflow:hidden;margin:8px 0;}
+.progress-fill{height:100%;background:linear-gradient(90deg,var(--cyan),var(--violet-bright));border-radius:4px;transition:width .5s;}
+.step-box{background:#0f1526;border-left:3px solid var(--cyan);border-radius:0 8px 8px 0;padding:12px 14px;margin:8px 0;font-size:13px;}
+.step-box .step-num{color:var(--cyan);font-family:var(--mono);font-size:11px;font-weight:700;}
+.lock-visual{display:flex;align-items:center;justify-content:center;gap:30px;padding:20px;flex-wrap:wrap;}
+.lock-box{width:80px;height:80px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:28px;border:2px solid var(--panel-border);background:#0f1526;transition:.3s;}
+.lock-box.locked{border-color:var(--violet);color:var(--violet-bright);box-shadow:0 0 20px rgba(91,63,191,.2);}
+.lock-box.unlocked{border-color:var(--cyan);color:var(--cyan);box-shadow:0 0 20px rgba(40,224,198,.2);}
+.arrow-anim{font-size:24px;color:var(--text-dim);animation:arrowBounce 1.5s infinite;}
+@keyframes arrowBounce{0%,100%{transform:translateX(0);}50%{transform:translateX(10px);}}
+.compare-table{width:100%;border-collapse:collapse;font-size:13px;margin-top:10px;}
+.compare-table th{text-align:left;padding:8px;border-bottom:2px solid var(--panel-border);color:var(--cyan);font-family:var(--mono);font-size:11px;text-transform:uppercase;}
+.compare-table td{padding:8px;border-bottom:1px solid #1a2035;color:var(--text-dim);}
+
+/* ---------- Responsive ---------- */
+@media (max-width:600px){
+  .hud-title{font-size:14px;}
+  .xp-pill{font-size:11px;padding:2px 10px;}
+  .mission-name{font-size:20px;}
+  .disc-wrap{width:220px;height:220px;}
+  .sub-table{grid-template-columns:repeat(13,1fr);font-size:9px;}
+  .node-grid{grid-template-columns:1fr;}
+  .grid2{grid-template-columns:1fr;}
+}
+</style>
+</head>
+<body>
+
+<canvas id="bgfx"></canvas>
+
+<div id="bootLoader">
+  <div class="boot-title">CIPHER HORIZON</div>
+  <div class="boot-sub">Restaurando a Rede Umbral...</div>
+  <div class="boot-bar"><div class="boot-bar-fill"></div></div>
+</div>
+
+<div id="hud">
+  <div class="hud-left">
+    <span class="hud-title" onclick="goTo('map')">CIPHER HORIZON</span>
+    <span class="xp-pill">XP <b id="xpVal">0</b></span>
+    <span id="modeBadge" class="mode-badge analogy" style="display:none;"></span>
+  </div>
+  <div class="hud-right">
+    <div class="icon-btn" title="Diário Criptográfico" onclick="goTo('diary')">📖</div>
+    <div class="icon-btn" title="Mapa" onclick="goTo('map')">🗺️</div>
+    <div class="icon-btn" title="Admin" onclick="goTo('admin')">🔐</div>
+  </div>
+</div>
+
+<div id="app">
+
+  <!-- IDENTIFICAÇÃO -->
+  <section id="scene-id" class="scene active">
+    <h1 class="title-logo" style="font-size:min(7vw,48px);">CIPHER HORIZON</h1>
+    <div class="title-sub" style="font-size:16px;">Pesquisa sobre Ensino de Criptografia</div>
+    <div class="panel">
+      <div class="panel-title">Perfil do Participante</div>
+      <div class="plain" style="border:none;padding:0;margin-bottom:16px;">Seus dados são anônimos. Você pode usar um apelido.</div>
+      <div class="field"><label>Nome (opcional)</label><input type="text" id="idNome" placeholder="Ex: Ana, ou deixe em branco"></div>
+      <div class="field"><label>Idade</label><input type="number" id="idIdade" min="8" max="99" placeholder="Ex: 17"></div>
+      <div class="field"><label>Curso / Área</label><input type="text" id="idCurso" placeholder="Ex: Ciência da Computação"></div>
+      <div class="field"><label>Nível de conhecimento em criptografia</label>
+        <select id="idNivel"><option value="nenhum">Nenhum — nunca estudei</option><option value="basico">Básico — já ouvi falar de cifras</option><option value="intermediario">Intermediário — sei o que é chave pública</option><option value="avancado">Avançado — já estudei ECC/ECDSA</option></select>
+      </div>
+      <div id="idError" style="color:var(--coral);font-size:12.5px;display:none;margin-bottom:10px;">Preencha idade e curso.</div>
+      <button class="btn primary" style="width:100%;" onclick="submitIdentification()">Iniciar Jornada →</button>
+    </div>
+  </section>
+
+  <!-- TITLE -->
+  <section id="scene-title" class="scene">
+    <h1 class="title-logo">CIPHER HORIZON</h1>
+    <div class="title-sub">The Elliptic Frontier</div>
+    <p class="title-tagline">A Rede Umbral caiu. Você foi recrutado pela Guilda dos Criptógrafos para reconstruí-la —
+      setor por setor, cifra por cifra — até dominar a matemática que protege o Livro-Razão Aberto. Nenhuma aula.
+      Só matemática real, sentida com as próprias mãos.</p>
+    <div class="title-actions">
+      <button class="btn primary" onclick="goTo('map')">Iniciar Jornada</button>
+      <button class="btn" onclick="goTo('diary')">Diário Criptográfico</button>
+      <button class="btn admin" onclick="goTo('admin')">🔐 Admin</button>
+    </div>
+  </section>
+
+  <!-- MAP -->
+  <section id="scene-map" class="scene">
+    <div class="map-wrap">
+      <div class="map-title">Mapa da Rede Umbral</div>
+      <div class="map-sub">Selecione um setor para restaurar.</div>
+      <div class="node-grid" id="nodeGrid"></div>
+    </div>
+  </section>
+
+  <!-- MISSION -->
+  <section id="scene-mission" class="scene">
+    <div class="mission-topbar">
+      <div>
+        <div class="mission-name" id="missionName">—</div>
+        <div class="mission-concept" id="missionConcept">—</div>
+      </div>
+      <button class="btn" onclick="goTo('map')">← Mapa</button>
+    </div>
+    <div class="oracle-box">
+      <div class="oracle-portrait"></div>
+      <div>
+        <div class="oracle-name">ORACLE</div>
+        <div class="oracle-text" id="oracleText">...</div>
+      </div>
+    </div>
+    <div class="mission-body" id="missionBody"></div>
+    <div class="mission-footer">
+      <button class="btn gold" id="missionCompleteBtn" onclick="finishMission()" disabled>Concluir Setor →</button>
+    </div>
+  </section>
+
+  <!-- DIARY -->
+  <section id="scene-diary" class="scene">
+    <div class="map-wrap">
+      <div class="map-title">Diário Criptográfico</div>
+      <div class="map-sub">Glossário vivo — cresce conforme você avança.</div>
+      <div id="diaryList"></div>
+    </div>
+  </section>
+
+  <!-- SURVEY -->
+  <section id="scene-survey" class="scene">
+    <div class="panel">
+      <div class="tag real">PESQUISA CIENTÍFICA</div>
+      <div class="panel-title">Sua opinião é importante</div>
+      <p style="color:var(--text-dim);font-size:14px;margin-bottom:16px;">Ajude a melhorar o ensino de criptografia respondendo às perguntas abaixo.</p>
+      <div class="field"><label>1. Como você classificaria a dificuldade dos conteúdos apresentados?</label>
+        <div class="radio-group"><label><input type="radio" name="dificuldade" value="facil"> Fácil</label><label><input type="radio" name="dificuldade" value="medio"> Médio</label><label><input type="radio" name="dificuldade" value="dificil"> Difícil</label></div>
+      </div>
+      <div class="field"><label>2. O que você achou mais interessante ou útil?</label><textarea id="feedbackInteresse" placeholder="Ex: O disco de César, a explicação sobre curvas elípticas..."></textarea></div>
+      <div class="field"><label>3. O que poderia ser melhorado?</label><textarea id="feedbackMelhoria" placeholder="Sugestões para tornar o conteúdo mais claro..."></textarea></div>
+      <div class="field"><label>4. Comentários adicionais (opcional)</label><textarea id="feedbackLivre" placeholder="Espaço livre para suas observações..."></textarea></div>
+      <button class="btn primary" style="width:100%;" onclick="submitSurvey()">Enviar Respostas e Finalizar</button>
+    </div>
+  </section>
+
+  <!-- ADMIN -->
+  <section id="scene-admin" class="scene">
+    <div class="panel">
+      <div class="panel-title" style="text-align:center;">🔐 Painel Administrativo</div>
+      <div id="adminLoginView">
+        <p style="color:var(--text-dim);margin-bottom:10px;">Digite a senha de administrador:</p>
+        <input type="password" id="adminPassInput" placeholder="Senha" style="width:100%;max-width:280px;background:#0f1526;border:1px solid var(--panel-border);border-radius:8px;padding:10px;color:var(--text);font-family:var(--mono);">
+        <div id="adminError" style="color:var(--coral);display:none;margin:10px 0;">Senha incorreta.</div>
+        <button class="btn primary" onclick="adminLogin()">Entrar</button>
+        <button class="btn" onclick="goTo('title')" style="margin-left:10px;">Voltar</button>
+      </div>
+      <div id="adminDashboardView" style="display:none;">
+        <div id="adminStats"></div>
+        <div style="margin:14px 0;"><button class="btn gold" onclick="exportAdminData()">⬇️ Exportar JSON</button> <button class="btn" onclick="goTo('map')">Voltar</button></div>
+        <div style="overflow-x:auto;"><div id="adminTable"></div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- END -->
+  <section id="scene-end" class="scene">
+    <div class="panel end-cert">
+      <div class="tag real">CAMPANHA CONCLUÍDA</div>
+      <h2 style="font-family:var(--serif);color:var(--gold-bright);">Guardião da Rede Umbral</h2>
+      <p style="color:var(--text-dim);">Você restaurou os 9 setores da Rede Umbral. XP final: <b id="finalXp" style="color:var(--cyan);"></b></p>
+      <p style="color:var(--text-dim);font-size:12.5px;">Obrigado por participar da pesquisa! Seus dados foram salvos localmente.</p>
+      <div class="achievement-grid" id="endAchievements"></div>
+      <button class="btn primary" onclick="goTo('map')">Voltar ao Mapa</button>
+    </div>
+  </section>
+
+</div>
+
+<div id="toast-container"></div>
+<div id="quiz-overlay" class="hidden">
+  <div class="quiz-card" id="quizCard"></div>
+</div>
+
+<script>
+/* ============================================================
+   CIPHERCORE — matemática criptográfica real
+   ============================================================ */
+const CipherCore = (() => {
+  function mod(a, m){ const r = a % m; return r < 0n ? r + m : r; }
+  function modInverse(a, m){
+    a = mod(a, m);
+    let [old_r, r] = [a, m];
+    let [old_s, s] = [1n, 0n];
+    while (r !== 0n){
+      const q = old_r / r;
+      [old_r, r] = [r, old_r - q*r];
+      [old_s, s] = [s, old_s - q*s];
+    }
+    if (old_r !== 1n) throw new Error("inverso não existe");
+    return mod(old_s, m);
+  }
+  function caesarShift(text, shift){
+    shift = ((shift % 26) + 26) % 26;
+    return text.split('').map(ch => {
+      const code = ch.charCodeAt(0);
+      if (code >= 65 && code <= 90) return String.fromCharCode((code - 65 + shift) % 26 + 65);
+      if (code >= 97 && code <= 122) return String.fromCharCode((code - 97 + shift) % 26 + 97);
+      return ch;
+    }).join('');
+  }
+  function textToBytes(t){ return new TextEncoder().encode(t); }
+  function bytesToHex(b){ return Array.from(b).map(x=>x.toString(16).padStart(2,'0')).join(''); }
+  function hexToBytes(h){ const a=[]; for(let i=0;i<h.length;i+=2) a.push(parseInt(h.substr(i,2),16)); return new Uint8Array(a); }
+  function xorBytes(a, keyBytes){
+    const out = new Uint8Array(a.length);
+    for (let i=0;i<a.length;i++) out[i] = a[i] ^ keyBytes[i % keyBytes.length];
+    return out;
+  }
+  function xorEncryptHex(plain, key){ return bytesToHex(xorBytes(textToBytes(plain), textToBytes(key))); }
+  function xorDecryptHex(hex, key){
+    const bytes = xorBytes(hexToBytes(hex), textToBytes(key));
+    return new TextDecoder().decode(bytes);
+  }
+  const INF = "INF";
+  function isInf(P){ return P === INF; }
+  function pointAdd(P, Q, a, p){
+    if (isInf(P)) return Q;
+    if (isInf(Q)) return P;
+    let [x1,y1] = P, [x2,y2] = Q;
+    if (x1 === x2 && mod(y1+y2, p) === 0n) return INF;
+    let lambda;
+    if (x1 === x2 && y1 === y2){
+      lambda = mod((3n*x1*x1 + a) * modInverse(2n*y1, p), p);
+    } else {
+      lambda = mod((y2-y1) * modInverse(x2-x1, p), p);
+    }
+    const x3 = mod(lambda*lambda - x1 - x2, p);
+    const y3 = mod(lambda*(x1-x3) - y1, p);
+    return [x3, y3];
+  }
+  function scalarMul(k, P, a, p){
+    let result = INF;
+    let addend = P;
+    let kk = k;
+    while (kk > 0n){
+      if ((kk & 1n) === 1n) result = pointAdd(result, addend, a, p);
+      addend = pointAdd(addend, addend, a, p);
+      kk >>= 1n;
+    }
+    return { point: result };
+  }
+  function allCurvePoints(a, b, p){
+    const pts = [];
+    for (let x = 0n; x < p; x++){
+      const rhs = mod(x*x*x + a*x + b, p);
+      for (let y = 0n; y < p; y++){
+        if (mod(y*y, p) === rhs){ pts.push([x,y]); }
+      }
+    }
+    return pts;
+  }
+  const secp256k1 = {
+    p: 2n**256n - 2n**32n - 977n,
+    a: 0n,
+    b: 7n,
+    Gx: 55066263022277343669578718895168534326250603453777594175500187360389116729240n,
+    Gy: 32670510020758816978083085130507043184471273380659243275938904335757337482424n,
+    n: 115792089237316195423570985008687907852837564279074904382605163141518161494337n,
+  };
+  secp256k1.G = [secp256k1.Gx, secp256k1.Gy];
+  function randomBigIntBits(bits){
+    const bytes = new Uint8Array(bits/8);
+    crypto.getRandomValues(bytes);
+    let hex = '0x' + Array.from(bytes).map(b=>b.toString(16).padStart(2,'0')).join('');
+    return BigInt(hex);
+  }
+  function generatePrivateKey(){
+    let k;
+    do { k = randomBigIntBits(256) % secp256k1.n; } while (k === 0n);
+    return k;
+  }
+  async function sha256Hex(msg){
+    const enc = new TextEncoder().encode(msg);
+    const digest = await crypto.subtle.digest('SHA-256', enc);
+    return Array.from(new Uint8Array(digest)).map(b=>b.toString(16).padStart(2,'0')).join('');
+  }
+  async function ecdsaSign(message, privKey){
+    const hashHex = await sha256Hex(message);
+    const z = BigInt('0x'+hashHex) % secp256k1.n;
+    let r=0n, s=0n, k;
+    do {
+      k = generatePrivateKey();
+      const R = scalarMul(k, secp256k1.G, secp256k1.a, secp256k1.p).point;
+      if (isInf(R)) continue;
+      r = mod(R[0], secp256k1.n);
+      if (r === 0n) continue;
+      const kInv = modInverse(k, secp256k1.n);
+      s = mod(kInv * (z + r*privKey), secp256k1.n);
+    } while (r === 0n || s === 0n);
+    return { r, s, z, hashHex };
+  }
+  async function ecdsaVerify(message, sig, pubKey){
+    const hashHex = await sha256Hex(message);
+    const z = BigInt('0x'+hashHex) % secp256k1.n;
+    const { r, s } = sig;
+    if (r <= 0n || r >= secp256k1.n || s <= 0n || s >= secp256k1.n) return false;
+    const sInv = modInverse(s, secp256k1.n);
+    const u1 = mod(z * sInv, secp256k1.n);
+    const u2 = mod(r * sInv, secp256k1.n);
+    const P1 = scalarMul(u1, secp256k1.G, secp256k1.a, secp256k1.p).point;
+    const P2 = scalarMul(u2, pubKey, secp256k1.a, secp256k1.p).point;
+    const R = pointAdd(P1, P2, secp256k1.a, secp256k1.p);
+    if (isInf(R)) return false;
+    return mod(R[0], secp256k1.n) === mod(r, secp256k1.n);
+  }
+  // ---- Batch inversion (Montgomery) ----
+  function batchInvert(fieldElements, p){
+    const n = fieldElements.length;
+    if (n === 0) return [];
+    const prefix = [1n];
+    for (let i = 0; i < n; i++) { prefix.push(mod(prefix[i] * fieldElements[i], p)); }
+    const invTotal = modInverse(prefix[n], p);
+    const inverses = []; let acc = invTotal;
+    for (let i = n-1; i >= 0; i--) { inverses[i] = mod(acc * prefix[i], p); acc = mod(acc * fieldElements[i], p); }
+    return inverses;
+  }
+  // ---- Pollard Kangaroo (simplificado) ----
+  function kangarooSearch(G, Q, a, p, lower, upper, maxSteps = 2000){
+    const n = upper - lower + 1;
+    const jumpSizes = []; for (let i=0; i<64; i++) jumpSizes.push(BigInt(Math.floor(Math.random()*Math.sqrt(n))+1));
+    function nextPoint(P, dist, jumps){
+      const idx = Number(P[0] % BigInt(jumps.length));
+      const j = jumps[idx];
+      const R = scalarMul(j, G, a, p).point;
+      if (isInf(R)) return { point: P, dist: dist };
+      return { point: pointAdd(P, R, a, p), dist: dist + j };
+    }
+    let tame = { point: G, dist: 0n };
+    for (let i=0; i<maxSteps; i++) {
+      tame = nextPoint(tame.point, tame.dist, jumpSizes);
+      if (tame.point[0] === Q[0] && tame.point[1] === Q[1]) return tame.dist;
+    }
+    let wild = { point: Q, dist: 0n };
+    for (let i=0; i<maxSteps; i++) {
+      wild = nextPoint(wild.point, wild.dist, jumpSizes);
+      if (wild.point[0] === G[0] && wild.point[1] === G[1]) return lower + wild.dist;
+    }
+    for (let k = lower; k <= upper; k++) {
+      const R = scalarMul(k, G, a, p).point;
+      if (R[0] === Q[0] && R[1] === Q[1]) return k;
+    }
+    return null;
+  }
+
+  return {
+    mod, modInverse, caesarShift, xorEncryptHex, xorDecryptHex, bytesToHex, hexToBytes, xorBytes, textToBytes,
+    pointAdd, scalarMul, allCurvePoints, INF, isInf, secp256k1, generatePrivateKey, sha256Hex, ecdsaSign, ecdsaVerify,
+    batchInvert, kangarooSearch
+  };
+})();
+
+/* ============================================================
+   HASH DE SENHA (SHA-256)
+   ============================================================ */
+async function hashPassword(str){
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
+  return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
+}
+// Senha padrão: admin (hash: 8c6976e5b5410415bde908bd4dee15dfb167a9c873fc4bb8a81f6f2ab448a918)
+const ADMIN_HASH = "8c6976e5b5410415bde908bd4dee15dfb167a9c873fc4bb8a81f6f2ab448a918";
+
+/* ============================================================
+   ESTADO DO JOGO
+   ============================================================ */
+const STORAGE_KEY = 'cipherhorizon_save_v2';
+let STATE = {
+  xp: 0,
+  completed: {},
+  currentSector: null,
+  diaryUnlocked: [],
+  achievements: [],
+  lastScene: 'id',
+  participant: null,
+  quizScores: {},
+  submitted: false,
+  surveyDone: false,
+  dificuldade: null,
+  feedback: null,
+};
+
+function loadSave(){
+  try{
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) STATE = JSON.parse(raw);
+  }catch(e){}
+}
+function save(){
+  try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(STATE)); }catch(e){}
+}
+
+function addXP(n){ STATE.xp += n; document.getElementById('xpVal').textContent = STATE.xp; save(); }
+
+function toast(title, body){
+  const c = document.getElementById('toast-container');
+  const el = document.createElement('div');
+  el.className = 'toast';
+  el.innerHTML = `<div class="toast-title">${title}</div><div class="toast-body">${body}</div>`;
+  c.appendChild(el);
+  setTimeout(()=>{ el.style.transition='.4s'; el.style.opacity='0'; setTimeout(()=>el.remove(),400); }, 3600);
+}
+function unlockAchievement(id, label){
+  if (STATE.achievements.includes(id)) return;
+  STATE.achievements.push(id); save();
+  toast('🏆 Conquista Desbloqueada', label);
+}
+function addDiary(term){
+  if (!STATE.diaryUnlocked.includes(term)) STATE.diaryUnlocked.push(term);
+  save();
+}
+
+/* ============================================================
+   NAVEGAÇÃO
+   ============================================================ */
+function goTo(scene){
+  document.querySelectorAll('.scene').forEach(s=>s.classList.remove('active'));
+  const el = document.getElementById('scene-'+scene);
+  if (el) el.classList.add('active');
+  STATE.lastScene = scene;
+  save();
+  document.getElementById('app').scrollTop = 0;
+  if (scene === 'map') renderMap();
+  if (scene === 'diary') renderDiary();
+  if (scene === 'end') renderEndAchievements();
+}
+
+/* ============================================================
+   IDENTIFICAÇÃO E PERSISTÊNCIA
+   ============================================================ */
+function submitIdentification(){
+  const nome = document.getElementById('idNome').value.trim();
+  const idade = parseInt(document.getElementById('idIdade').value, 10);
+  const curso = document.getElementById('idCurso').value.trim();
+  const nivel = document.getElementById('idNivel').value;
+  const err = document.getElementById('idError');
+  if (!idade || idade < 8 || idade > 99 || !curso){ err.style.display='block'; return; }
+  err.style.display='none';
+  STATE.participant = {
+    id: 'p_'+Date.now().toString(36)+'_'+Math.random().toString(36).slice(2,8),
+    nome: nome || 'Anônimo', idade, curso, nivel,
+    startedAt: new Date().toISOString()
+  };
+  STATE.lastScene = 'title';
+  save();
+  goTo('title');
+}
+
+function saveResultsLocal(){
+  try{
+    const dataKey = 'cipher_horizon_data';
+    let allData = JSON.parse(localStorage.getItem(dataKey) || '[]');
+    const entry = {
+      ...STATE.participant,
+      xp: STATE.xp,
+      setoresConcluidos: Object.keys(STATE.completed).length,
+      conquistas: STATE.achievements,
+      quizPorSetor: STATE.quizScores,
+      dificuldade: STATE.dificuldade || null,
+      feedback: STATE.feedback || null,
+      finalizadoEm: new Date().toISOString()
+    };
+    const existing = allData.findIndex(d => d.id === STATE.participant.id);
+    if (existing >= 0) allData[existing] = entry;
+    else allData.push(entry);
+    localStorage.setItem(dataKey, JSON.stringify(allData));
+    STATE.submitted = true; save();
+    return true;
+  } catch(e){ console.error('Erro ao salvar local:', e); return false; }
+}
+
+/* ============================================================
+   ADMIN
+   ============================================================ */
+async function adminLogin(){
+  const pwd = document.getElementById('adminPassInput').value;
+  const hash = await hashPassword(pwd);
+  if (hash === ADMIN_HASH){
+    document.getElementById('adminLoginView').style.display = 'none';
+    document.getElementById('adminDashboardView').style.display = 'block';
+    renderAdminDashboard();
+  } else {
+    document.getElementById('adminError').style.display = 'block';
+  }
+}
+function renderAdminDashboard(){
+  const dataKey = 'cipher_horizon_data';
+  const data = JSON.parse(localStorage.getItem(dataKey) || '[]');
+  const statsDiv = document.getElementById('adminStats');
+  if (!data.length){ statsDiv.innerHTML='<p style="color:var(--text-dim);">Nenhum dado coletado ainda.</p>'; document.getElementById('adminTable').innerHTML=''; return; }
+  const total = data.length;
+  const totalXP = data.reduce((s,x)=>s+(x.xp||0),0);
+  const avgXP = Math.round(totalXP/total);
+  const completed = data.filter(x=>(x.setoresConcluidos||0)>=9).length;
+  const avgAge = Math.round(data.reduce((s,x)=>s+(x.idade||0),0)/total);
+  statsDiv.innerHTML = `
+    <div class="stat-grid">
+      <div class="stat-card"><div class="num">${total}</div><div class="lbl">Participantes</div></div>
+      <div class="stat-card"><div class="num">${avgXP}</div><div class="lbl">XP Médio</div></div>
+      <div class="stat-card"><div class="num">${completed}</div><div class="lbl">Completaram (9/9)</div></div>
+      <div class="stat-card"><div class="num">${avgAge}</div><div class="lbl">Idade Média</div></div>
+    </div>`;
+  let html = '<table class="admin-table"><tr><th>Nome</th><th>Idade</th><th>Curso</th><th>XP</th><th>Setores</th><th>Dificuldade</th><th>Feedback</th></tr>';
+  data.slice().reverse().forEach(p=>{
+    const diff = p.dificuldade || '—';
+    const fb = (p.feedback && p.feedback.interesse) ? p.feedback.interesse.slice(0,40)+'…' : (p.feedback && p.feedback.melhoria) ? p.feedback.melhoria.slice(0,40)+'…' : '—';
+    html += `<tr><td>${p.nome||'Anônimo'}</td><td>${p.idade||'?'}</td><td>${p.curso||'—'}</td><td>${p.xp||0}</td><td>${p.setoresConcluidos||0}/9</td><td>${diff}</td><td>${fb}</td></tr>`;
+  });
+  html += '</table>';
+  document.getElementById('adminTable').innerHTML = html;
+}
+function exportAdminData(){
+  const dataKey = 'cipher_horizon_data';
+  const data = localStorage.getItem(dataKey);
+  if (!data || data==='[]'){ toast('Aviso','Nenhum dado para exportar.'); return; }
+  const blob = new Blob([data], {type:'application/json'});
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'cipher_horizon_dados.json'; a.click();
+  toast('📥 Exportado','Arquivo JSON baixado.');
+}
+
+/* ============================================================
+   MAPA E DIÁRIO
+   ============================================================ */
+const SECTORS = [
+  { id:1, name:'A Torre de César', concept:'Cifra de César', mode:'analogy', builder: buildSector1,
+    intro:'A última transmissão do Arquiteto está cifrada com o método mais antigo da Guilda: um simples deslocamento de letras. Gire a roda até o texto fazer sentido.' },
+  { id:2, name:'A Câmara Simétrica', concept:'Criptografia Simétrica (XOR)', mode:'real', builder: buildSector2,
+    intro:'Esta câmara só abre com a mesma chave usada para trancá-la. Rápida, real, mas com um problema — como combinar a chave sem ninguém ouvir?' },
+  { id:3, name:'O Cofre de Dois Cadeados', concept:'Chave Pública — Analogia', mode:'analogy', builder: buildSector3,
+    intro:'Alice precisa enviar um segredo a Bob sem que os dois jamais tenham combinado uma chave. Observe o protocolo dos dois cadeados.' },
+  { id:4, name:'O Observatório de Curvas', concept:'Curvas Elípticas — Adição', mode:'real', builder: buildSector4,
+    intro:'Toda a criptografia moderna do Livro-Razão Aberto repousa numa curva. Trace uma reta entre dois pontos e descubra a regra secreta de soma.' },
+  { id:5, name:'secp256k1 e o Gerador', concept:'Multiplicação Escalar (Double-and-Add)', mode:'real', builder: buildSector5,
+    intro:'Somar um ponto a si mesmo mil vezes levaria uma eternidade — a menos que você duplique. Bem-vindo ao algoritmo double-and-add.' },
+  { id:6, name:'O Abismo Discreto', concept:'ECDLP e Paralelismo (CUDA)', mode:'real', builder: buildSector6,
+    intro:'Dado um ponto resultado, encontrar o escalar que o gerou é, de propósito, quase impossível. Veja o abismo entre uma busca sequencial e um exército de processadores paralelos.' },
+  { id:7, name:'Chaves do Livro-Razão', concept:'Chaves Pública/Privada', mode:'real', builder: buildSector7,
+    intro:'Sua chave privada é apenas um número — gigantesco e aleatório. Multiplicado pelo ponto gerador G, ele produz sua chave pública. Forje seu primeiro par.' },
+  { id:8, name:'A Assinatura Final', concept:'ECDSA e Ponta-a-Ponta', mode:'real', builder: buildSector8,
+    intro:'A Rede Umbral só será restaurada se você provar, matematicamente, que é você quem fala. Assine. Verifique. Feche o círculo.' },
+  { id:9, name:'O Pipeline Geométrico', concept:'CUDA + Batch Inversion + Kangaroo', mode:'real', builder: buildSector9,
+    intro:'O coração do motor de busca: veja como Campo Finito, Jacobianas, Batch Inversion, Random Walk, Filtro e Persistência se encadeiam, e encontre uma chave com a caçada do canguru.' },
+];
+function sectorUnlocked(id){ if (id === 1) return true; return !!STATE.completed[id-1]; }
+
+function renderMap(){
+  const grid = document.getElementById('nodeGrid');
+  grid.innerHTML = '';
+  SECTORS.forEach(s=>{
+    const unlocked = sectorUnlocked(s.id);
+    const done = !!STATE.completed[s.id];
+    const div = document.createElement('div');
+    div.className = 'node' + (unlocked?'':' locked') + (done?' done':'');
+    div.innerHTML = `${done?'<div class="node-check">✔</div>':''}
+      <div class="node-num">SETOR ${String(s.id).padStart(2,'0')}</div>
+      <div class="node-name">${s.name}</div>
+      <div class="node-concept">${s.concept}</div>`;
+    if (unlocked) div.onclick = () => enterSector(s.id);
+    grid.appendChild(div);
+  });
+}
+
+function renderDiary(){
+  const list = document.getElementById('diaryList');
+  const terms = {
+    'Cifra de César':'Deslocamento fixo de letras no alfabeto. Quebrável por força bruta (só 25 chaves).',
+    'XOR / Simétrica':'Mesma chave cifra e decifra. Rápida e real, mas exige um canal seguro para combinar a chave.',
+    'Chave Pública (analogia)':'Duas partes trocam um segredo aplicando e removendo "cadeados" próprios, sem nunca compartilhar uma chave comum.',
+    'Curva Elíptica':'Curva y² = x³ + ax + b (mod p). Seus pontos formam um grupo: dá para "somar" pontos com uma regra geométrica precisa.',
+    'secp256k1':'Curva elíptica real (a=0, b=7) usada pelo Bitcoin. Definida sobre um primo gigantesco de 256 bits.',
+    'Double-and-Add':'Algoritmo eficiente para calcular k·P sem somar P a si mesmo k vezes — usa duplicações sucessivas guiadas pelos bits de k.',
+    'ECDLP':'Dado P e Q=k·P, achar k é computacionalmente inviável. É essa dificuldade que torna a ECC segura.',
+    'Chave Privada/Pública (Bitcoin)':'Privada: número aleatório de 256 bits. Pública: privada × G. Impossível reverter (ECDLP).',
+    'ECDSA':'Assinatura digital sobre curva elíptica: prova que você tem a chave privada, sem revelá-la, e amarra a prova à mensagem exata.',
+    'Criptografia Ponta-a-Ponta (E2E)':'Apenas remetente e destinatário decifram a mensagem; qualquer intermediário só vê texto cifrado.',
+    'Pipeline CUDA':'Fluxo: Campo Finito → Jacobianas → Batch Inversion → Random Walk → Filtro → Persistência → Busca.',
+    'Batch Inversion':'Agrupar inversões modulares para reduzir o custo computacional.',
+    'Caçada do Canguru':'Método de Pollard para resolver ECDLP em intervalos conhecidos.',
+  };
+  list.innerHTML = Object.keys(terms).map(t=>{
+    const unlocked = STATE.diaryUnlocked.includes(t);
+    return `<div class="diary-entry ${unlocked?'':'locked'}">
+      <div class="diary-term">${t}</div>
+      <div class="diary-def">${unlocked ? terms[t] : '🔒 Ainda não descoberto. Avance na campanha.'}</div>
+    </div>`;
+  }).join('');
+}
+
+/* ============================================================
+   MISSÃO
+   ============================================================ */
+let currentSectorData = null;
+function enterSector(id){
+  currentSectorData = SECTORS.find(s=>s.id===id);
+  STATE.currentSector = id;
+  document.getElementById('missionName').textContent = 'Setor '+id+' — '+currentSectorData.name;
+  document.getElementById('missionConcept').textContent = currentSectorData.concept;
+  document.getElementById('oracleText').textContent = currentSectorData.intro;
+  const badge = document.getElementById('modeBadge');
+  badge.style.display = 'inline-block';
+  badge.className = 'mode-badge ' + currentSectorData.mode;
+  badge.textContent = currentSectorData.mode === 'real' ? 'Matemática Real' : 'Analogia Educacional';
+  document.getElementById('missionCompleteBtn').disabled = true;
+  const body = document.getElementById('missionBody');
+  body.innerHTML = '';
+  currentSectorData.builder(body);
+  goTo('mission');
+}
+function markMissionReady(){
+  document.getElementById('missionCompleteBtn').disabled = false;
+}
+function finishMission(){
+  const id = currentSectorData.id;
+  if (!STATE.completed[id]){
+    STATE.completed[id] = true;
+    addXP(100);
+    save();
+    openQuiz(id);
+  } else {
+    goTo('map');
+  }
+}
+
+/* ============================================================
+   QUIZ
+   ============================================================ */
+const QUIZZES = {
+  1: [{q:'Por que a Cifra de César é fácil de quebrar?',
+       opts:['Porque só existem 25 chaves possíveis para testar','Porque usa números primos gigantes','Porque depende de GPUs'],
+       correct:0, explain:'Com apenas 25 deslocamentos possíveis, um computador testa todos em segundos.'},
+      {q:'O que a análise de frequência de letras explora?',
+       opts:['O tamanho da chave','Que certas letras (como "a", "e") aparecem mais que outras em um idioma','A velocidade da GPU'],
+       correct:1, explain:'O deslocamento preserva o padrão de frequência das letras.'}],
+  2: [{q:'Na criptografia simétrica, quem consegue decifrar a mensagem?',
+       opts:['Qualquer pessoa','Só quem possui a mesma chave usada para cifrar','Só quem tem uma GPU'],
+       correct:1, explain:'Simétrica significa que a mesma chave cifra e decifra.'},
+      {q:'Qual é o principal problema prático da criptografia simétrica pura?',
+       opts:['Ela é lenta demais para qualquer uso','A troca segura da chave entre as partes','Ela não pode ser implementada em software'],
+       correct:1, explain:'Se um espião intercepta a chave durante a troca, toda a comunicação futura é comprometida.'}],
+  3: [{q:'No protocolo dos dois cadeados, por que a caixa nunca viaja destrancada?',
+       opts:['Porque sempre há pelo menos um cadeado que só uma das partes pode remover','Por estética','Porque os cadeados são decorativos'],
+       correct:0, explain:'Em cada etapa, ao menos um cadeado cuja chave só uma pessoa possui permanece fechado.'},
+      {q:'O que a criptografia de chave pública resolve, de forma real?',
+       opts:['O problema de nunca precisar de nenhuma chave','O problema de combinar uma chave secreta sem um canal seguro prévio','O problema de armazenamento em disco'],
+       correct:1, explain:'O par de chaves matematicamente ligado permite comunicação segura sem encontro prévio.'}],
+  4: [{q:'O que caracteriza uma curva elíptica usada em criptografia?',
+       opts:['Uma equação da forma y² = x³ + ax + b sobre um corpo finito','Um círculo perfeito','Uma reta com inclinação negativa'],
+       correct:0, explain:'É essa equação, calculada com aritmética modular, que define o grupo.'},
+      {q:'Como se soma geometricamente dois pontos distintos P e Q na curva?',
+       opts:['Multiplicando suas coordenadas','Traçando a reta secante por P e Q, achando o terceiro ponto de interseção e refletindo no eixo X','Girando a curva 90 graus'],
+       correct:1, explain:'Secante + reflexão define a adição no grupo.'}],
+  5: [{q:'Por que o algoritmo "double-and-add" é necessário para calcular k·G quando k é enorme?',
+       opts:['Porque somar G a si mesmo k vezes seria computacionalmente inviável','Porque G muda de valor','Porque a curva tem apenas 26 pontos'],
+       correct:0, explain:'Double-and-add calcula k·G em cerca de log₂(k) passos.'},
+      {q:'Os bits do escalar k, no algoritmo double-and-add, controlam:',
+       opts:['A cor da interface','Se cada etapa faz só duplicação ou duplicação seguida de adição','O tamanho da tela'],
+       correct:1, explain:'Cada bit decide se uma soma extra ocorre naquela etapa.'}],
+  6: [{q:'O que é o ECDLP (Problema do Logaritmo Discreto em Curvas Elípticas)?',
+       opts:['A dificuldade de, dado P e Q=k·P, encontrar k','A dificuldade de desenhar uma curva','A dificuldade de somar dois números pequenos'],
+       correct:0, explain:'É essa assimetria — fácil calcular k·P, inviável reverter — que sustenta toda a segurança.'},
+      {q:'Por que nem todo o poder de paralelismo (GPUs/CUDA) do planeta quebra uma chave secp256k1 em tempo hábil?',
+       opts:['Porque o espaço de chaves (~2²⁵⁶) é astronomicamente maior que qualquer ganho de paralelismo viável','Porque GPUs não sabem multiplicar','Porque a curva muda a cada segundo'],
+       correct:0, explain:'Mesmo com paralelismo, o espaço de busca é tão vasto que o tempo necessário excede a idade do universo.'}],
+  7: [{q:'De onde vem a chave pública de um par de chaves estilo Bitcoin?',
+       opts:['É sorteada de forma independente da chave privada','É o resultado de multiplicar a chave privada pelo ponto gerador G da curva','É a chave privada escrita ao contrário'],
+       correct:1, explain:'Chave pública = chave privada × G. Fácil de calcular, inviável de reverter.'},
+      {q:'Por que a chave privada deve ser gerada com um gerador aleatório criptograficamente seguro?',
+       opts:['Só por tradição','Porque um número previsível tornaria a chave privada adivinhável, quebrando toda a segurança','Porque números pares são proibidos'],
+       correct:1, explain:'Previsibilidade reduz o espaço de busca e compromete a segurança.'}],
+  8: [{q:'O que uma assinatura digital ECDSA prova?',
+       opts:['Que a mensagem é verdadeira','Que quem assinou possui a chave privada correspondente, e que a mensagem não foi alterada','Que a mensagem foi criptografada'],
+       correct:1, explain:'A assinatura amarra matematicamente a chave privada do assinante à mensagem exata.'},
+      {q:'Qual é a diferença essencial entre "assinar" e "cifrar" uma mensagem?',
+       opts:['São a mesma coisa','Assinar prova autenticidade sem esconder o conteúdo; cifrar esconde o conteúdo (sigilo)','Assinar é mais lento que cifrar sempre'],
+       correct:1, explain:'Autenticidade e sigilo são propriedades independentes.'}],
+  9: [{q:'Qual é a principal vantagem de usar coordenadas Jacobianas em um pipeline de ECC?',
+       opts:['Reduz o número de inversões modulares','Aumenta a precisão numérica','Permite curvas maiores'],
+       correct:0, explain:'Coordenadas Jacobianas atrasam as inversões para o final do pipeline, economizando operações caras.'},
+      {q:'No método da caçada do canguru (Pollard Kangaroo), o que acontece quando um canguru "tame" e um "wild" se encontram?',
+       opts:['Ocorre uma colisão que permite recuperar a chave privada','O algoritmo reinicia','A curva é alterada'],
+       correct:0, explain:'A colisão entre os dois cangurus fornece a relação matemática que revela a chave privada no intervalo conhecido.'}],
+};
+
+let quizState = null;
+function openQuiz(sectorId){
+  const questions = QUIZZES[sectorId] || [];
+  quizState = { sectorId, questions, idx:0, correctCount:0 };
+  document.getElementById('quiz-overlay').classList.remove('hidden');
+  renderQuizQuestion();
+}
+function renderQuizQuestion(){
+  const { questions, idx } = quizState;
+  const card = document.getElementById('quizCard');
+  if (idx >= questions.length){
+    card.innerHTML = `<div class="quiz-progress">CONCLUÍDO</div>
+      <div class="quiz-q">Setor consolidado! ${quizState.correctCount}/${questions.length} corretas.</div>
+      <button class="btn primary" onclick="closeQuiz()">Continuar</button>`;
+    if (quizState.correctCount === questions.length){
+      addXP(50);
+      unlockAchievement('quiz100_'+quizState.sectorId, 'Professor Honorário — 100% no quiz do Setor '+quizState.sectorId);
+    }
+    return;
+  }
+  const q = questions[idx];
+  card.innerHTML = `<div class="quiz-progress">PERGUNTA ${idx+1} / ${questions.length}</div>
+    <div class="quiz-q">${q.q}</div>
+    <div id="quizOpts"></div>
+    <div id="quizExplain" class="quiz-explain" style="display:none;"></div>`;
+  const optsDiv = document.getElementById('quizOpts');
+  q.opts.forEach((opt,i)=>{
+    const b = document.createElement('button');
+    b.className = 'quiz-opt';
+    b.textContent = opt;
+    b.onclick = () => answerQuiz(i);
+    optsDiv.appendChild(b);
+  });
+}
+function answerQuiz(i){
+  const q = quizState.questions[quizState.idx];
+  const opts = document.querySelectorAll('.quiz-opt');
+  opts.forEach((b,idx)=>{
+    b.onclick = null;
+    if (idx === q.correct) b.classList.add('correct');
+    else if (idx === i) b.classList.add('wrong');
+  });
+  if (i === q.correct) quizState.correctCount++;
+  document.getElementById('quizExplain').style.display = 'block';
+  document.getElementById('quizExplain').textContent = q.explain;
+  const card = document.getElementById('quizCard');
+  const nextBtn = document.createElement('button');
+  nextBtn.className = 'btn primary';
+  nextBtn.style.marginTop = '14px';
+  nextBtn.textContent = 'Próxima →';
+  nextBtn.onclick = () => { quizState.idx++; renderQuizQuestion(); };
+  card.appendChild(nextBtn);
+}
+function closeQuiz(){
+  document.getElementById('quiz-overlay').classList.add('hidden');
+  STATE.quizScores[quizState.sectorId] = { acertos: quizState.correctCount, total: quizState.questions.length };
+  save();
+  // Se completou todos os 9 setores, vai para a pesquisa
+  if (Object.keys(STATE.completed).length >= 9) {
+    goTo('survey');
+  } else {
+    goTo('map');
+  }
+}
+
+/* ============================================================
+   SURVEY
+   ============================================================ */
+function submitSurvey(){
+  const dificuldade = document.querySelector('input[name="dificuldade"]:checked');
+  if (!dificuldade){ toast('Atenção','Selecione a dificuldade antes de enviar.'); return; }
+  STATE.dificuldade = dificuldade.value;
+  STATE.feedback = {
+    interesse: document.getElementById('feedbackInteresse').value.trim(),
+    melhoria: document.getElementById('feedbackMelhoria').value.trim(),
+    livre: document.getElementById('feedbackLivre').value.trim()
+  };
+  STATE.surveyDone = true;
+  save();
+  const ok = saveResultsLocal();
+  if (ok) toast('📤 Salvado','Dados armazenados localmente.');
+  else toast('Erro','Falha ao salvar localmente.');
+  goTo('end');
+}
+
+/* ============================================================
+   RENDER END
+   ============================================================ */
+function renderEndAchievements(){
+  const allAch = [
+    {id:'caesar_break', label:'Quebra-Códigos'}, {id:'xor_lab', label:'Chave Sob Medida'},
+    {id:'two_locks', label:'Arquiteto de Cofres'}, {id:'first_curve_sum', label:'Explorador de Curvas'},
+    {id:'double_add_master', label:'Mestre do Double-and-Add'}, {id:'vs_abyss', label:'Sobrevivente do Abismo'},
+    {id:'first_address', label:'Ferreiro de Chaves'}, {id:'signed_sealed', label:'Mestre da Assinatura'},
+    {id:'pipeline_architect', label:'Arquiteto de Pipeline'}, {id:'kangaroo_hunter', label:'Caçador de Cangurus'}
+  ];
+  for (let i=1; i<=9; i++) {
+    if (STATE.quizScores[i] && STATE.quizScores[i].acertos === STATE.quizScores[i].total) {
+      allAch.push({ id: 'quiz100_'+i, label: 'Professor Honorário — Setor '+i });
+    }
+  }
+  document.getElementById('endAchievements').innerHTML = allAch.map(a=>{
+    const unlocked = STATE.achievements.includes(a.id);
+    return `<div class="ach-card ${unlocked?'unlocked':'locked'}">${unlocked?'🏆':'🔒'} ${a.label}</div>`;
+  }).join('');
+}
+
+/* ============================================================
+   SETOR 1 — CÉSAR (DISCO INTERATIVO)
+   ============================================================ */
+function buildSector1(body){
+  const target = "A REDE UMBRAL AGUARDA SUA CHAVE";
+  const secretShift = 7;
+  const cipher = CipherCore.caesarShift(target, secretShift);
+  body.innerHTML = `
+    <div class="panel">
+      <span class="tag analogy">ANALOGIA / CIFRA CLÁSSICA REAL</span>
+      <div class="panel-title">Disco de César — arraste o anel interno</div>
+      <div class="disc-wrap" id="discWrap">
+        <div class="disc-outer" id="discOuter"></div>
+        <div class="disc-inner" id="discInner"></div>
+        <div class="disc-pointer"></div>
+        <div class="disc-center">
+          <button class="disc-stepbtn" id="discMinus" type="button">−</button>
+          <div class="disc-shift-value" id="discShiftVal">0</div>
+          <button class="disc-stepbtn" id="discPlus" type="button">+</button>
+        </div>
+      </div>
+      <div class="disc-hint">Arraste o anel violeta (interno) com o mouse ou o dedo — o ponteiro ciano marca o alinhamento com o anel dourado (fixo)</div>
+      <div class="sub-table" id="subTable"></div>
+    </div>
+    <div class="panel">
+      <div class="panel-title">Transmissão Interceptada</div>
+      <div class="result-box mono" style="font-size:17px;letter-spacing:2px;">${cipher}</div>
+      <div class="result-box" id="decodedBox" style="margin-top:10px;">${cipher}</div>
+      <div class="plain">Gire o disco até o texto acima fazer sentido. Cada um dos 26 deslocamentos possíveis é testado visualmente — isso é força bruta feita com as próprias mãos.</div>
+    </div>
+    <div class="panel">
+      <div class="panel-title">Frequência de Letras (texto decodificado)</div>
+      <div class="freq-bars" id="freqBars"></div>
+      <div class="plain">Em português/inglês, letras como A, E, O aparecem muito mais que outras. Quando o deslocamento certo é encontrado, o padrão de frequência "se encaixa" no padrão natural do idioma.</div>
+    </div>
+    <div class="panel">
+      <div class="panel-title">Bancada de Cifragem Livre</div>
+      <div class="field"><label>Sua mensagem (cifrada com o deslocamento atual do disco)</label>
+        <input type="text" id="freeMsg" value="GUILDA DOS CRIPTOGRAFOS"></div>
+      <div class="result-box" id="freeResult"></div>
+    </div>`;
+
+  const LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+  const STEP = 360/26;
+  const outer = document.getElementById('discOuter');
+  const inner = document.getElementById('discInner');
+  const discWrap = document.getElementById('discWrap');
+
+  function placeLetters(container, radiusPct){
+    container.innerHTML = '';
+    LETTERS.split('').forEach((ch,i)=>{
+      const angleDeg = i*STEP - 90;
+      const rad = angleDeg*Math.PI/180;
+      const x = 50 + radiusPct*Math.cos(rad);
+      const y = 50 + radiusPct*Math.sin(rad);
+      const el = document.createElement('div');
+      el.className = 'disc-letter';
+      el.textContent = ch;
+      el.style.left = x+'%';
+      el.style.top = y+'%';
+      container.appendChild(el);
+    });
+  }
+  placeLetters(outer, 42);
+  placeLetters(inner, 40);
+
+  let shift = 0;
+  let rotation = 0;
+  const normShift = (s) => ((Math.round(s)%26)+26)%26;
+
+  function renderSubTable(){
+    document.getElementById('subTable').innerHTML = LETTERS.split('').map(ch=>{
+      const enc = CipherCore.caesarShift(ch, shift);
+      return `<div>${ch}→<b>${enc}</b></div>`;
+    }).join('');
+  }
+  function updateFreq(text){
+    const counts = {};
+    for (const ch of text.toUpperCase()) if (/[A-Z]/.test(ch)) counts[ch] = (counts[ch]||0)+1;
+    const max = Math.max(1, ...Object.values(counts));
+    document.getElementById('freqBars').innerHTML = LETTERS.split('').map(l=>{
+      const h = ((counts[l]||0)/max*100).toFixed(0);
+      return `<div class="freq-bar" style="height:${Math.max(2,h)}%;" title="${l}: ${counts[l]||0}"></div>`;
+    }).join('');
+  }
+  function updateAll(){
+    document.getElementById('discShiftVal').textContent = shift;
+    renderSubTable();
+    const decoded = CipherCore.caesarShift(cipher, -shift);
+    const decodedBox = document.getElementById('decodedBox');
+    decodedBox.textContent = decoded;
+    updateFreq(decoded);
+    if (decoded === target){
+      decodedBox.classList.remove('bad');
+      markMissionReady();
+      addDiary('Cifra de César');
+      unlockAchievement('caesar_break', 'Quebra-Códigos — decifrou a primeira mensagem de César');
+    }
+    const freeMsg = document.getElementById('freeMsg');
+    if (freeMsg) document.getElementById('freeResult').textContent = CipherCore.caesarShift(freeMsg.value, shift);
+  }
+  function applyRotation(withTransition){
+    inner.style.transition = withTransition ? '' : 'none';
+    inner.style.transform = `rotate(${rotation}deg)`;
+  }
+  function setShiftFromRotation(snap){
+    shift = normShift(-rotation/STEP);
+    if (snap){ rotation = -shift*STEP; applyRotation(true); }
+    updateAll();
+  }
+
+  let dragging = false, startPointerAngle = 0, startRotation = 0;
+  function pointerAngle(e){
+    const rect = discWrap.getBoundingClientRect();
+    const cx = rect.left + rect.width/2, cy = rect.top + rect.height/2;
+    return Math.atan2(e.clientY-cy, e.clientX-cx) * 180/Math.PI;
+  }
+  inner.addEventListener('pointerdown', (e)=>{
+    dragging = true;
+    inner.classList.add('dragging');
+    inner.setPointerCapture(e.pointerId);
+    startPointerAngle = pointerAngle(e);
+    startRotation = rotation;
+  });
+  inner.addEventListener('pointermove', (e)=>{
+    if (!dragging) return;
+    rotation = startRotation + (pointerAngle(e) - startPointerAngle);
+    applyRotation(false);
+    setShiftFromRotation(false);
+  });
+  function endDrag(){
+    if (!dragging) return;
+    dragging = false;
+    inner.classList.remove('dragging');
+    setShiftFromRotation(true);
+  }
+  inner.addEventListener('pointerup', endDrag);
+  inner.addEventListener('pointercancel', endDrag);
+
+  document.getElementById('discPlus').onclick = () => { shift = normShift(shift+1); rotation = -shift*STEP; applyRotation(true); updateAll(); };
+  document.getElementById('discMinus').onclick = () => { shift = normShift(shift-1); rotation = -shift*STEP; applyRotation(true); updateAll(); };
+  document.getElementById('freeMsg').oninput = updateAll;
+
+  applyRotation(true);
+  updateAll();
+}
+
+/* ============================================================
+   SETOR 2 — XOR (CORRIGIDO E FUNCIONAL)
+   ============================================================ */
+function buildSector2(body){
+  body.innerHTML = `
+    <div class="panel">
+      <span class="tag real">MATEMÁTICA REAL (XOR bit a bit)</span>
+      <div class="panel-title">Bancada de Cifragem Simétrica</div>
+      <div class="grid2">
+        <div>
+          <div class="field"><label>Mensagem</label><input type="text" id="xMsg" value="RUA"></div>
+          <div class="field"><label>Chave compartilhada</label><input type="text" id="xKey" value="AB"></div>
+          <div style="margin:10px 0;">
+            <button class="btn primary" id="xorEncrypt">🔒 Cifrar XOR</button>
+            <button class="btn" id="xorDecrypt">🔓 Decifrar XOR</button>
+          </div>
+          <div class="field"><label>Cifrado (hex)</label><div class="result-box" id="xCipher">---</div></div>
+          <div class="field"><label>Texto decifrado</label><div class="result-box" id="xPlainBack" style="color:var(--gold-bright);">---</div></div>
+        </div>
+        <div class="plain" style="align-self:start;">Cada byte da mensagem é combinado com XOR (⊕) com um byte da chave, repetida ciclicamente. Aplicar XOR de novo com a mesma chave desfaz a operação — por isso funciona como cifra e como decifra.</div>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="panel-title">Demonstração bit-a-bit</div>
+      <div id="xorDemo" style="font-family:var(--mono);font-size:12px;color:var(--text-dim);line-height:1.8;"></div>
+    </div>
+    <div class="panel">
+      <div class="panel-title">O Perigo do Reuso de Chave</div>
+      <div class="grid2">
+        <div>
+          <div class="field"><label>Mensagem 1</label><input type="text" id="reMsg1" value="SENHA COFRE NORTE"></div>
+          <div class="field"><label>Mensagem 2</label><input type="text" id="reMsg2" value="SENHA COFRE LESTE"></div>
+          <div class="field"><label>Mesma chave usada nas duas</label><input type="text" id="reKey" value="ORACLE"></div>
+        </div>
+        <div>
+          <div class="field"><label>Cifrado 1 ⊕ Cifrado 2</label><div class="result-box" id="reXor"></div></div>
+          <div class="field"><label>Mensagem 1 ⊕ Mensagem 2 (deveria ser secreto!)</label><div class="result-box" id="rePlainXor"></div></div>
+        </div>
+      </div>
+      <div class="plain">Repare: os dois resultados coincidem. Se a mesma chave cifra duas mensagens, um espião pode combinar os dois textos cifrados e eliminar a chave — revelando a relação entre as mensagens originais sem nunca descobrir a chave.</div>
+      <button class="btn gold" id="s2complete" style="margin-top:14px;">Entendi o risco — marcar setor como pronto</button>
+    </div>`;
+
+  function updateXor(){
+    const msg = document.getElementById('xMsg').value;
+    const key = document.getElementById('xKey').value || 'A';
+    const cipherHex = CipherCore.xorEncryptHex(msg, key);
+    document.getElementById('xCipher').textContent = cipherHex;
+    document.getElementById('xPlainBack').textContent = msg; // mostra o original
+    // Tabela
+    let demoHTML = `<table class="compare-table"><tr><th>Caractere</th><th>ASCII (hex)</th><th>Chave</th><th>XOR (hex)</th><th>Byte cifrado</th></tr>`;
+    const msgB = CipherCore.textToBytes(msg);
+    const keyB = CipherCore.textToBytes(key);
+    for (let i=0; i<msgB.length; i++){
+      const r = msgB[i] ^ keyB[i % keyB.length];
+      const charCode = r;
+      const charDisplay = (charCode >= 32 && charCode <= 126) ? String.fromCharCode(charCode) : '?';
+      demoHTML += `<tr>
+        <td>${msg[i]}</td>
+        <td>${msgB[i].toString(16).padStart(2,'0')}</td>
+        <td>${key[i % key.length]} (${keyB[i % keyB.length].toString(16)})</td>
+        <td style="color:var(--cyan)">${r.toString(16).padStart(2,'0')}</td>
+        <td style="color:var(--gold-bright)">${charDisplay} (${r.toString(16).padStart(2,'0')})</td>
+      </tr>`;
+    }
+    demoHTML += '</table>';
+    document.getElementById('xorDemo').innerHTML = demoHTML;
+  }
+
+  document.getElementById('xorEncrypt').onclick = function(){
+    const msg = document.getElementById('xMsg').value;
+    const key = document.getElementById('xKey').value || 'A';
+    const cipherHex = CipherCore.xorEncryptHex(msg, key);
+    document.getElementById('xCipher').textContent = cipherHex;
+    document.getElementById('xPlainBack').textContent = msg;
+    updateXor();
+  };
+  document.getElementById('xorDecrypt').onclick = function(){
+    const hex = document.getElementById('xCipher').textContent;
+    const key = document.getElementById('xKey').value || 'A';
+    if (hex === '---' || !key) return;
+    try {
+      const decrypted = CipherCore.xorDecryptHex(hex, key);
+      document.getElementById('xPlainBack').textContent = decrypted;
+      document.getElementById('xMsg').value = decrypted;
+      updateXor();
+    } catch(e) {
+      document.getElementById('xPlainBack').textContent = 'Erro: chave inválida';
+    }
+  };
+
+  document.getElementById('xMsg').oninput = updateXor;
+  document.getElementById('xKey').oninput = updateXor;
+  updateXor();
+
+  function updateReuse(){
+    const m1 = document.getElementById('reMsg1').value;
+    const m2 = document.getElementById('reMsg2').value;
+    const key = document.getElementById('reKey').value || 'A';
+    const c1 = CipherCore.hexToBytes(CipherCore.xorEncryptHex(m1, key));
+    const c2 = CipherCore.hexToBytes(CipherCore.xorEncryptHex(m2, key));
+    const len = Math.min(c1.length, c2.length);
+    const xorC = new Uint8Array(len); for(let i=0;i<len;i++) xorC[i]=c1[i]^c2[i];
+    const b1 = CipherCore.textToBytes(m1), b2 = CipherCore.textToBytes(m2);
+    const len2 = Math.min(b1.length,b2.length);
+    const xorP = new Uint8Array(len2); for(let i=0;i<len2;i++) xorP[i]=b1[i]^b2[i];
+    document.getElementById('reXor').textContent = CipherCore.bytesToHex(xorC);
+    document.getElementById('rePlainXor').textContent = CipherCore.bytesToHex(xorP);
+  }
+  ['reMsg1','reMsg2','reKey'].forEach(id=>document.getElementById(id).oninput = updateReuse);
+  updateReuse();
+
+  document.getElementById('s2complete').onclick = () => {
+    markMissionReady();
+    addDiary('XOR / Simétrica');
+    unlockAchievement('xor_lab', 'Chave Sob Medida — completou o laboratório XOR');
+  };
+}
+
+/* ============================================================
+   SETOR 3 — DOIS CADEADOS
+   ============================================================ */
+function buildSector3(body){
+  let step = 0;
+  const steps = [
+    'Caixa aberta, com o segredo dentro.',
+    "Alice tranca a caixa com SEU cadeado (só Alice tem a chave). Envia a Bob.",
+    "Bob recebe a caixa (ainda trancada pelo cadeado de Alice) e adiciona SEU PRÓPRIO cadeado. Devolve a Alice.",
+    "Alice recebe a caixa com DOIS cadeados. Ela remove APENAS o seu cadeado (ela tem a chave dele). Envia a Bob.",
+    "Bob recebe a caixa com SOMENTE o cadeado dele. Ele remove o seu próprio cadeado — e abre a caixa!",
+  ];
+  body.innerHTML = `
+    <div class="panel">
+      <span class="tag analogy">ANALOGIA — PROTOCOLO DOS TRÊS PASSOS</span>
+      <div class="panel-title">Simulação: Alice → Bob sem chave combinada</div>
+      <div class="result-box" id="boxState" style="font-size:15px;min-height:60px;"></div>
+      <div class="row" style="margin-top:14px;">
+        <button class="btn primary" id="stepBtn">Avançar protocolo →</button>
+        <button class="btn" onclick="resetS3()">Reiniciar</button>
+      </div>
+      <div class="plain">Note: em NENHUM momento Alice e Bob combinaram uma chave em comum. Cada um usa apenas o seu próprio cadeado/chave. Isso é uma <b>analogia</b> para a intuição — a criptografia de chave pública real (RSA, ECC) não troca "cadeados físicos", mas resolve o mesmo problema com matemática.</div>
+    </div>
+    <div class="panel">
+      <span class="tag real">MATEMÁTICA REAL — O QUE ISSO REPRESENTA DE VERDADE</span>
+      <div class="panel-title">Chave Pública vs. Chave Privada</div>
+      <div class="plain" style="border:none;padding-top:0;">
+        Na criptografia de chave pública real: Bob publica sua <b>chave pública</b> (qualquer um pode vê-la, como um cadeado aberto disponível para todos). Alice usa essa chave pública para cifrar o segredo. Só a <b>chave privada</b> de Bob — que ele nunca compartilha — consegue decifrar. É exatamente isso que torna possível o Setor 4 em diante: curvas elípticas fornecem a matemática por trás desse par de chaves.
+      </div>
+    </div>`;
+  const boxState = document.getElementById('boxState');
+  boxState.textContent = steps[0];
+  document.getElementById('stepBtn').onclick = () => {
+    step = Math.min(step+1, steps.length-1);
+    boxState.textContent = steps[step];
+    if (step === steps.length-1){
+      markMissionReady();
+      addDiary('Chave Pública (analogia)');
+      unlockAchievement('two_locks', 'Dois Cadeados — completou o protocolo sem chave combinada');
+    }
+  };
+  window.resetS3 = () => { step = 0; boxState.textContent = steps[0]; };
+}
+
+/* ============================================================
+   SETOR 4 — CURVA DE BOLSO
+   ============================================================ */
+const TOY = { a: 2n, b: 3n, p: 97n };
+function buildSector4(body){
+  body.innerHTML = `
+    <div class="panel">
+      <span class="tag real">MATEMÁTICA REAL — CURVA DE BOLSO (didática, p pequeno)</span>
+      <div class="panel-title">y² = x³ + 2x + 3 (mod 97)</div>
+      <canvas id="curveCanvas" class="lab-canvas" width="640" height="420"></canvas>
+      <div class="row" style="margin-top:10px;">
+        <div class="field" style="flex:1;"><label>Ponto P (x,y)</label><input type="text" id="ptP" value=""></div>
+        <div class="field" style="flex:1;"><label>Ponto Q (x,y)</label><input type="text" id="ptQ" value=""></div>
+        <button class="btn primary" id="sumBtn">P + Q</button>
+        <button class="btn" id="doubleBtn">2·P (duplicar)</button>
+      </div>
+      <div class="result-box" id="sumResult">Clique dois pontos no gráfico para escolher P e Q.</div>
+      <div class="plain">Clique em dois pontos da curva (primeiro define P, segundo define Q). O jogo traça a reta secante, encontra o terceiro ponto de interseção com a curva e reflete no eixo horizontal — essa é a definição real de "P + Q" em curvas elípticas. Clicar em "2·P" usa a reta tangente em P.</div>
+    </div>`;
+  const canvas = document.getElementById('curveCanvas');
+  const ctx = canvas.getContext('2d');
+  const pts = CipherCore.allCurvePoints(TOY.a, TOY.b, TOY.p);
+  let P = null, Q = null, R = null;
+
+  function toScreen(x,y){
+    const pad = 30;
+    const w = canvas.width - pad*2, h = canvas.height - pad*2;
+    return [pad + (Number(x)/97)*w, pad + h - (Number(y)/97)*h];
+  }
+  function draw(){
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    ctx.fillStyle = '#0c1120'; ctx.fillRect(0,0,canvas.width,canvas.height);
+    ctx.fillStyle = '#5b3fbf88';
+    pts.forEach(([x,y])=>{ const [sx,sy]=toScreen(x,y); ctx.beginPath(); ctx.arc(sx,sy,3,0,7); ctx.fill(); });
+    function markPoint(pt, color, label){
+      if (!pt) return;
+      const [sx,sy] = toScreen(pt[0], pt[1]);
+      ctx.fillStyle = color; ctx.beginPath(); ctx.arc(sx,sy,6,0,7); ctx.fill();
+      ctx.fillStyle = '#eae7dc'; ctx.font='12px monospace'; ctx.fillText(label, sx+8, sy-8);
+    }
+    markPoint(P, '#e8b23d', 'P');
+    markPoint(Q, '#28e0c6', 'Q');
+    markPoint(R, '#e24e4e', 'R=P+Q');
+    if (P && Q && R){
+      const [x1,y1]=toScreen(P[0],P[1]), [x2,y2]=toScreen(Q[0],Q[1]);
+      ctx.strokeStyle = '#8f7bffaa'; ctx.setLineDash([4,3]);
+      ctx.beginPath(); ctx.moveTo(x1,y1); ctx.lineTo(x2,y2); ctx.stroke(); ctx.setLineDash([]);
+    }
+  }
+  draw();
+  canvas.onclick = (e) => {
+    const rect = canvas.getBoundingClientRect();
+    const mx = (e.clientX-rect.left) * (canvas.width/rect.width);
+    const my = (e.clientY-rect.top) * (canvas.height/rect.height);
+    let best=null, bestD=1e9;
+    pts.forEach(pt=>{ const [sx,sy]=toScreen(pt[0],pt[1]); const d=(sx-mx)**2+(sy-my)**2; if(d<bestD){bestD=d;best=pt;} });
+    if (bestD > 400) return;
+    if (!P || (P && Q)) { P = best; Q = null; R = null; }
+    else { Q = best; }
+    document.getElementById('ptP').value = P ? `(${P[0]}, ${P[1]})` : '';
+    document.getElementById('ptQ').value = Q ? `(${Q[0]}, ${Q[1]})` : '';
+    draw();
+  };
+  document.getElementById('sumBtn').onclick = () => {
+    if (!P || !Q){ document.getElementById('sumResult').textContent = 'Escolha P e Q primeiro (clique no gráfico).'; return; }
+    R = CipherCore.pointAdd(P, Q, TOY.a, TOY.p);
+    document.getElementById('sumResult').textContent = CipherCore.isInf(R) ? 'P + Q = O (ponto no infinito)' : `P + Q = (${R[0]}, ${R[1]})`;
+    draw();
+    markMissionReady();
+    addDiary('Curva Elíptica');
+    unlockAchievement('first_curve_sum', 'Primeira Curva — somou dois pontos manualmente');
+  };
+  document.getElementById('doubleBtn').onclick = () => {
+    if (!P){ document.getElementById('sumResult').textContent = 'Escolha ao menos o ponto P.'; return; }
+    Q = P;
+    R = CipherCore.pointAdd(P, P, TOY.a, TOY.p);
+    document.getElementById('sumResult').textContent = CipherCore.isInf(R) ? '2·P = O (ponto no infinito)' : `2·P = (${R[0]}, ${R[1]})`;
+    draw();
+    markMissionReady();
+    addDiary('Curva Elíptica');
+  };
+}
+
+/* ============================================================
+   SETOR 5 — secp256k1 / DOUBLE-AND-ADD
+   ============================================================ */
+function buildSector5(body){
+  const S = CipherCore.secp256k1;
+  body.innerHTML = `
+    <div class="panel">
+      <span class="tag real">MATEMÁTICA REAL — secp256k1</span>
+      <div class="panel-title">Parâmetros reais da curva do Bitcoin</div>
+      <div class="result-box mono" style="font-size:11.5px;line-height:1.8;">
+p = ${S.p}
+a = ${S.a}   b = ${S.b}
+Gx = ${S.Gx}
+Gy = ${S.Gy}
+n  = ${S.n}
+      </div>
+      <div class="plain">Esta curva é grande demais para desenhar ponto a ponto (o Setor 4 usava p=97; aqui p tem 256 bits). Em vez disso, calculamos k·G de verdade, usando aritmética modular real com números gigantes.</div>
+    </div>
+    <div class="panel">
+      <div class="panel-title">Console de Multiplicação Escalar (double-and-add)</div>
+      <div class="row">
+        <div class="field" style="flex:1;"><label>Escalar k</label><input type="number" id="kInput" value="12345"></div>
+        <button class="btn primary" id="calcBtn">Calcular k·G</button>
+      </div>
+      <div class="result-box mono" id="binView" style="font-size:12px;"></div>
+      <div class="result-box mono" id="pointResult" style="font-size:12px;word-break:break-all;"></div>
+      <div class="plain">O escalar k é lido bit a bit. Cada bit decide se, além de duplicar o ponto acumulado, uma soma extra acontece. Assim, k·G é calculado em ~log₂(k) etapas — rápido mesmo para k com 256 bits.</div>
+    </div>`;
+  document.getElementById('calcBtn').onclick = () => {
+    let k;
+    try { k = BigInt(document.getElementById('kInput').value); } catch(e){ return; }
+    if (k <= 0n) return;
+    document.getElementById('binView').textContent = 'k em binário: ' + k.toString(2) + '  (' + k.toString(2).length + ' bits)';
+    const t0 = performance.now();
+    const { point } = CipherCore.scalarMul(k, S.G, S.a, S.p);
+    const t1 = performance.now();
+    document.getElementById('pointResult').textContent =
+      `k·G = (\n  x = ${point[0]}\n  y = ${point[1]}\n)\ncalculado em ${(t1-t0).toFixed(3)} ms`;
+    markMissionReady();
+    addDiary('secp256k1'); addDiary('Double-and-Add');
+    unlockAchievement('double_add_master', 'Mestre do Double-and-Add — calculou k·G sobre secp256k1');
+  };
+}
+
+/* ============================================================
+   SETOR 6 — ECDLP / CUDA
+   ============================================================ */
+function buildSector6(body){
+  const p = 97n, a = TOY.a;
+  const G = CipherCore.allCurvePoints(a, TOY.b, p)[0];
+  const k = 41n;
+  const Q = CipherCore.scalarMul(k, G, a, p).point;
+  body.innerHTML = `
+    <div class="panel" style="border-color:var(--gold);">
+      <div style="font-family:var(--serif);font-style:italic;color:var(--text-dim);font-size:13px;line-height:1.7;">
+        📜 Documento recuperado dos arquivos da Guilda — <i>"Arquitetura Unificada de Fluxo Geométrico para Computação de Curvas Elípticas em GPU utilizando CUDA"</i> — usado aqui apenas como inspiração de ambientação para a simulação abaixo (não é uma citação de um artigo real publicado).
+      </div>
+    </div>
+    <div class="panel">
+      <span class="tag analogy">ANALOGIA DE ESCALA — busca em curva de bolso</span>
+      <div class="panel-title">Encontre k tal que k·G = Q (curva pequena, p=97)</div>
+      <div class="result-box mono">G = (${G[0]}, ${G[1]})   Q = (${Q[0]}, ${Q[1]})</div>
+      <div class="row" style="margin-top:10px;">
+        <button class="btn" id="seqBtn">▶ Busca Sequencial (estilo CPU)</button>
+        <button class="btn primary" id="parBtn">▶▶▶ Busca Paralela (estilo GPU/CUDA)</button>
+      </div>
+      <div id="cuda-grid"></div>
+      <div class="result-box" id="cudaLog" style="margin-top:10px;">Aguardando...</div>
+    </div>
+    <div class="panel">
+      <span class="tag real">MATEMÁTICA REAL — escala do problema verdadeiro</span>
+      <div class="panel-title">Por que a ECDLP real (secp256k1) é inviável mesmo em paralelo</div>
+      <div class="plain" style="border:none;padding-top:0;">
+        O espaço de chaves da secp256k1 tem cerca de 2²⁵⁶ ≈ 1,16 × 10⁷⁷ possibilidades. Mesmo supondo um cluster fictício de <b>10 bilhões</b> de GPUs, cada uma testando <b>10 bilhões</b> de chaves por segundo — um poder de computação muito acima de qualquer coisa que exista hoje — ainda levaria muito mais tempo que a idade do universo (~1,38 × 10¹⁰ anos) para varrer esse espaço. Isto é uma simulação ilustrativa de escala e paralelismo, não uma implementação real de CUDA nem uma ferramenta de quebra de chaves.
+      </div>
+      <button class="btn gold" id="s6complete" style="margin-top:10px;">Compreendi a escala do problema</button>
+    </div>`;
+
+  const gridEl = document.getElementById('cuda-grid');
+  const N = 97;
+  for (let i=0;i<N;i++){ const d=document.createElement('div'); gridEl.appendChild(d); }
+  const cells = gridEl.children;
+  let found = false;
+
+  document.getElementById('seqBtn').onclick = async () => {
+    Array.from(cells).forEach(c=>c.className='');
+    found = false;
+    const log = document.getElementById('cudaLog');
+    for (let i=1n;i<p && !found;i++){
+      cells[Number(i)].className='on';
+      const test = CipherCore.scalarMul(i, G, a, p).point;
+      if (!CipherCore.isInf(test) && test[0]===Q[0] && test[1]===Q[1]){
+        cells[Number(i)].className='hit'; found=true;
+        log.textContent = `Sequencial: encontrado k=${i} após ${i} tentativas (uma por vez).`;
+      }
+      await new Promise(r=>setTimeout(r,25));
+    }
+    markMissionReady();
+  };
+  document.getElementById('parBtn').onclick = async () => {
+    Array.from(cells).forEach(c=>c.className='');
+    found = false;
+    const log = document.getElementById('cudaLog');
+    const batch = 8;
+    for (let start=1n; start<p && !found; start+=BigInt(batch)){
+      const batchIdx = [];
+      for (let j=0n;j<batch && start+j<p;j++) batchIdx.push(start+j);
+      batchIdx.forEach(i=>cells[Number(i)].className='on');
+      for (const i of batchIdx){
+        const test = CipherCore.scalarMul(i, G, a, p).point;
+        if (!CipherCore.isInf(test) && test[0]===Q[0] && test[1]===Q[1]){
+          cells[Number(i)].className='hit'; found=true;
+          log.textContent = `Paralelo: ${batch} "threads" testadas por vez — k=${i} encontrado muito mais rápido.`;
+        }
+      }
+      await new Promise(r=>setTimeout(r,60));
+      if (found) break;
+    }
+    markMissionReady();
+  };
+  document.getElementById('s6complete').onclick = () => {
+    markMissionReady();
+    addDiary('ECDLP');
+    unlockAchievement('vs_abyss', 'Contra o Abismo — completou a simulação de escala do ECDLP');
+  };
+}
+
+/* ============================================================
+   SETOR 7 — CHAVES ESTILO BITCOIN
+   ============================================================ */
+function buildSector7(body){
+  const S = CipherCore.secp256k1;
+  body.innerHTML = `
+    <div class="panel">
+      <span class="tag real">MATEMÁTICA REAL — geração de chaves</span>
+      <div class="panel-title">Forjaria de Chaves</div>
+      <button class="btn primary" id="genBtn">🔑 Gerar novo par de chaves</button>
+      <div class="field" style="margin-top:14px;"><label>Chave Privada (256 bits, aleatória)</label><div class="result-box mono" id="privOut" style="font-size:11px;word-break:break-all;">—</div></div>
+      <div class="field"><label>Chave Pública = Privada × G</label><div class="result-box mono" id="pubOut" style="font-size:11px;word-break:break-all;">—</div></div>
+      <div class="field"><label>"Endereço" simplificado (SHA-256 da chave pública, truncado)</label><div class="result-box mono" id="addrOut" style="font-size:12px;">—</div></div>
+      <div class="plain">Isto é matemática real: a chave privada é um inteiro aleatório de 256 bits gerado pelo gerador criptográfico do sistema; a chave pública é o resultado real de multiplicá-la pelo ponto gerador G da secp256k1. O endereço real do Bitcoin usa RIPEMD-160(SHA-256(chave pública)) + Base58Check — aqui simplificamos para SHA-256 truncado, mas o princípio (hash da chave pública) é o mesmo.
+        <br><br><b>Aviso:</b> chaves geradas neste jogo são apenas educacionais — nunca as use para proteger ativos reais.</div>
+    </div>`;
+  document.getElementById('genBtn').onclick = async () => {
+    const priv = CipherCore.generatePrivateKey();
+    const pub = CipherCore.scalarMul(priv, S.G, S.a, S.p).point;
+    const pubStr = pub[0].toString(16)+pub[1].toString(16);
+    const hash = await CipherCore.sha256Hex(pubStr);
+    document.getElementById('privOut').textContent = '0x'+priv.toString(16);
+    document.getElementById('pubOut').textContent = `x: 0x${pub[0].toString(16)}\ny: 0x${pub[1].toString(16)}`;
+    document.getElementById('addrOut').textContent = '1'+hash.slice(0,34);
+    markMissionReady();
+    addDiary('Chave Privada/Pública (Bitcoin)');
+    unlockAchievement('first_address', 'Meu Primeiro Endereço — gerou um par de chaves estilo Bitcoin');
+  };
+}
+
+/* ============================================================
+   SETOR 8 — ECDSA + E2E
+   ============================================================ */
+function buildSector8(body){
+  const S = CipherCore.secp256k1;
+  const priv = CipherCore.generatePrivateKey();
+  const pub = CipherCore.scalarMul(priv, S.G, S.a, S.p).point;
+  body.innerHTML = `
+    <div class="panel">
+      <span class="tag real">MATEMÁTICA REAL — ECDSA sobre secp256k1</span>
+      <div class="panel-title">Bancada de Assinatura</div>
+      <div class="result-box mono" style="font-size:11px;">Sua chave pública: (${pub[0].toString(16).slice(0,16)}..., ${pub[1].toString(16).slice(0,16)}...)</div>
+      <div class="field" style="margin-top:10px;"><label>Mensagem a assinar</label><input type="text" id="msgInput" value="Eu, Guardião, restauro a Rede Umbral."></div>
+      <button class="btn primary" id="signBtn">✒️ Assinar</button>
+      <div class="result-box mono" id="sigOut" style="font-size:11px;word-break:break-all;margin-top:10px;">—</div>
+      <button class="btn" id="verifyBtn" style="margin-top:10px;" disabled>Verificar assinatura</button>
+      <button class="btn" id="tamperBtn" style="margin-top:10px;" disabled>Adulterar 1 caractere e reverificar</button>
+      <div class="result-box" id="verifyOut" style="margin-top:10px;">—</div>
+    </div>
+    <div class="panel">
+      <span class="tag analogy">SIMULAÇÃO — Criptografia Ponta-a-Ponta (E2E)</span>
+      <div class="panel-title">Alice → Bob, com Eve espionando o meio do caminho</div>
+      <div class="result-box" id="e2eLog" style="font-size:12.5px;line-height:1.8;">Clique para simular.</div>
+      <button class="btn gold" id="e2eBtn" style="margin-top:10px;">▶ Simular troca E2E</button>
+    </div>`;
+  let sig = null, msg = '';
+  document.getElementById('signBtn').onclick = async () => {
+    msg = document.getElementById('msgInput').value;
+    sig = await CipherCore.ecdsaSign(msg, priv);
+    document.getElementById('sigOut').textContent = `r = 0x${sig.r.toString(16)}\ns = 0x${sig.s.toString(16)}\nhash(msg) = ${sig.hashHex}`;
+    document.getElementById('verifyBtn').disabled = false;
+    document.getElementById('tamperBtn').disabled = false;
+    document.getElementById('verifyOut').textContent = '—';
+    markMissionReady();
+  };
+  document.getElementById('verifyBtn').onclick = async () => {
+    const ok = await CipherCore.ecdsaVerify(msg, sig, pub);
+    const out = document.getElementById('verifyOut');
+    out.textContent = ok ? '✔ Assinatura VÁLIDA — a mensagem não foi alterada e vem de quem possui a chave privada.' : '✘ Assinatura inválida.';
+    out.className = ok ? 'result-box' : 'result-box bad';
+    if (ok){ addDiary('ECDSA'); unlockAchievement('signed_sealed', 'Assinado e Selado — assinou e verificou uma mensagem ECDSA'); }
+  };
+  document.getElementById('tamperBtn').onclick = async () => {
+    const tampered = msg + '!';
+    const ok = await CipherCore.ecdsaVerify(tampered, sig, pub);
+    const out = document.getElementById('verifyOut');
+    out.textContent = ok ? 'Inesperado.' : `✘ Assinatura INVÁLIDA para "${tampered}" — 1 caractere já quebra a verificação. Isso prova a integridade da mensagem original.`;
+    out.className = 'result-box bad';
+  };
+  document.getElementById('e2eBtn').onclick = async () => {
+    const log = document.getElementById('e2eLog');
+    const privA = CipherCore.generatePrivateKey(), pubA = CipherCore.scalarMul(privA, S.G, S.a, S.p).point;
+    const privB = CipherCore.generatePrivateKey(), pubB = CipherCore.scalarMul(privB, S.G, S.a, S.p).point;
+    const sharedA = CipherCore.scalarMul(privA, pubB, S.a, S.p).point;
+    const sharedB = CipherCore.scalarMul(privB, pubA, S.a, S.p).point;
+    const same = sharedA[0]===sharedB[0] && sharedA[1]===sharedB[1];
+    const keyHex = await CipherCore.sha256Hex(sharedA[0].toString(16));
+    const message = "Encontro às 22h no setor 7.";
+    const cipherHex = CipherCore.xorEncryptHex(message, keyHex);
+    log.innerHTML = `1. Alice e Bob trocam apenas chaves PÚBLICAS.<br>
+      2. Cada um calcula, sozinho, um segredo compartilhado: privA·PubB = privB·PubA → <b>${same?'idênticos ✔ (ECDH real)':'ERRO'}</b><br>
+      3. Alice cifra a mensagem com uma chave derivada desse segredo: <span class="mono">${cipherHex.slice(0,40)}...</span><br>
+      4. Eve, no meio do caminho, só vê o texto cifrado acima — sem a chave privada de Alice ou Bob, não recupera a mensagem.<br>
+      5. Bob, com seu próprio segredo compartilhado (idêntico ao de Alice), decifra: <b>"${message}"</b>`;
+    addDiary('Criptografia Ponta-a-Ponta (E2E)');
+    unlockAchievement('e2e_master', 'Guardião da Rede Umbral — completou a campanha');
+    markMissionReady();
+  };
+}
+
+/* ============================================================
+   SETOR 9 — PIPELINE + BATCH INVERSION + KANGAROO
+   ============================================================ */
+function buildSector9(body){
+  body.innerHTML = `
+    <div class="panel">
+      <span class="tag real">MATEMÁTICA REAL</span>
+      <div class="panel-title">Pipeline Geométrico + Caçada do Canguru</div>
+      <p style="font-size:13.5px;color:var(--text-dim);margin-bottom:14px;">O motor de busca ECC combina várias técnicas do seu artigo. Veja o pipeline em ação e participe da caçada!</p>
+      <div class="pipeline-flow" id="pipelineFlow9">
+        <div class="pipe-step" data-step="0"><span class="step-icon">🧮</span><span class="step-name">Campo Finito</span><span class="step-desc">Aritmética modular</span></div>
+        <div class="pipe-step" data-step="1"><span class="step-icon">📐</span><span class="step-name">Jacobianas</span><span class="step-desc">Coordenadas projetivas</span></div>
+        <div class="pipe-step" data-step="2"><span class="step-icon">⚡</span><span class="step-name">Batch Inversion</span><span class="step-desc">Inversão em lote</span></div>
+        <div class="pipe-step" data-step="3"><span class="step-icon">🦘</span><span class="step-name">Random Walk</span><span class="step-desc">Caminhada Kangaroo</span></div>
+        <div class="pipe-step" data-step="4"><span class="step-icon">🔍</span><span class="step-name">Filtro DP</span><span class="step-desc">Distinguished Points</span></div>
+        <div class="pipe-step" data-step="5"><span class="step-icon">💾</span><span class="step-name">Persistência</span><span class="step-desc">Armazenamento</span></div>
+        <div class="pipe-step" data-step="6"><span class="step-icon">🎯</span><span class="step-name">Busca</span><span class="step-desc">Colisão e recuperação</span></div>
+      </div>
+      <div style="margin:14px 0;"><button class="btn primary" id="runPipelineBtn9">▶ Executar Pipeline</button></div>
+      <div class="result-box" id="pipelineLog9">Aguardando execução...</div>
+    </div>
+    <div class="panel">
+      <div class="panel-title">Batch Inversion — Simulação</div>
+      <div class="row">
+        <div class="field" style="flex:1;"><label>Número de inversões</label><input type="number" id="batchN9" value="10" min="2" max="100"></div>
+        <button class="btn primary" id="batchRunBtn9">⚡ Calcular Ganho</button>
+      </div>
+      <div id="batchResult9" style="margin-top:10px;">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+          <div class="panel" style="padding:12px;"><div style="color:var(--text-dim);font-size:12px;">Inversões individuais</div><div id="individualCost9" style="font-family:var(--serif);font-size:24px;color:var(--violet-bright);">—</div></div>
+          <div class="panel" style="padding:12px;"><div style="color:var(--text-dim);font-size:12px;">Batch Inversion</div><div id="batchCost9" style="font-family:var(--serif);font-size:24px;color:var(--cyan);">—</div></div>
+        </div>
+        <div class="progress-bar"><div class="progress-fill" id="batchGainBar9" style="width:0%;"></div></div>
+        <div style="text-align:center;font-size:13px;color:var(--text-dim);">Ganho de performance</div>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="panel-title">Caçada do Canguru (Pollard Kangaroo)</div>
+      <p style="font-size:13.5px;color:var(--text-dim);margin-bottom:10px;">Encontre a chave k no intervalo [1, 100] tal que k·G = Q. Clique para iniciar a caçada.</p>
+      <div id="kangarooResult" class="result-box" style="min-height:60px;">Aguardando...</div>
+      <button class="btn gold" id="kangarooBtn9">🦘 Iniciar Caçada</button>
+    </div>`;
+
+  // Pipeline
+  let pipelineInterval9 = null;
+  document.getElementById('runPipelineBtn9').onclick = function(){
+    const steps = document.querySelectorAll('#pipelineFlow9 .pipe-step');
+    let current = 0;
+    if (pipelineInterval9) clearInterval(pipelineInterval9);
+    document.getElementById('pipelineLog9').textContent = 'Iniciando pipeline...';
+    pipelineInterval9 = setInterval(() => {
+      steps.forEach((el,i) => { el.classList.toggle('active', i === current); });
+      document.getElementById('pipelineLog9').textContent = 'Etapa '+(current+1)+'/7: '+steps[current].querySelector('.step-name').textContent;
+      current++;
+      if (current >= steps.length) {
+        clearInterval(pipelineInterval9); pipelineInterval9 = null;
+        document.getElementById('pipelineLog9').textContent = '✅ Pipeline concluído! Campo Finito → Jacobianas → Batch Inversion → Random Walk → Filtro → Persistência → Busca.';
+        markMissionReady();
+        addDiary('Pipeline CUDA');
+        addDiary('Batch Inversion');
+        unlockAchievement('pipeline_architect', 'Arquiteto de Pipeline — executou o fluxo geométrico');
+      }
+    }, 700);
+  };
+
+  // Batch inversion
+  document.getElementById('batchRunBtn9').onclick = function(){
+    const n = parseInt(document.getElementById('batchN9').value) || 10;
+    const individual = n * 100;
+    const batch = 100 + 3 * n;
+    const gain = ((individual - batch) / individual * 100).toFixed(1);
+    document.getElementById('individualCost9').textContent = individual + ' ops';
+    document.getElementById('batchCost9').textContent = batch + ' ops';
+    document.getElementById('batchGainBar9').style.width = Math.min(gain, 100) + '%';
+    toast('⚡ Batch Inversion', 'Ganho de '+gain+'% com '+n+' inversões');
+  };
+
+  // Kangaroo hunt
+  document.getElementById('kangarooBtn9').onclick = function(){
+    const log = document.getElementById('kangarooResult');
+    log.textContent = '🦘 Caçando...';
+    setTimeout(() => {
+      try {
+        // Usar uma curva pequena para demonstração (p=97)
+        const a = 2n, b = 3n, p = 97n;
+        const G = CipherCore.allCurvePoints(a, b, p)[0];
+        const k = BigInt(Math.floor(Math.random() * 50) + 10);
+        const Q = CipherCore.scalarMul(k, G, a, p).point;
+        const found = CipherCore.kangarooSearch(G, Q, a, p, 1n, 100n, 2000);
+        if (found !== null && found === k) {
+          log.textContent = '✅ Caçada bem‑sucedida! k = '+found+' (verificado: '+found+'·G = Q)';
+          addDiary('Caçada do Canguru');
+          unlockAchievement('kangaroo_hunter', 'Caçador de Cangurus — encontrou a chave pelo método de Pollard');
+          markMissionReady();
+        } else {
+          log.textContent = '❌ Caçada falhou. Tentando novamente... (a chave era '+k+')';
+        }
+      } catch(e) {
+        log.textContent = 'Erro na caçada: '+e.message;
+      }
+    }, 500);
+  };
+}
+
+/* ============================================================
+   BACKGROUND PARTICLE FX
+   ============================================================ */
+(function bgfx(){
+  const canvas = document.getElementById('bgfx');
+  const ctx = canvas.getContext('2d');
+  let w,h,particles=[];
+  function resize(){ w=canvas.width=window.innerWidth; h=canvas.height=window.innerHeight; }
+  window.addEventListener('resize', resize); resize();
+  const N = 70;
+  for (let i=0;i<N;i++){
+    particles.push({ x:Math.random()*w, y:Math.random()*h, vx:(Math.random()-.5)*.15, vy:(Math.random()-.5)*.15, r:Math.random()*1.6+.4 });
+  }
+  function step(){
+    ctx.clearRect(0,0,w,h);
+    ctx.fillStyle = '#070911'; ctx.fillRect(0,0,w,h);
+    particles.forEach(p=>{
+      p.x+=p.vx; p.y+=p.vy;
+      if (p.x<0) p.x=w; if (p.x>w) p.x=0; if (p.y<0) p.y=h; if (p.y>h) p.y=0;
+    });
+    for (let i=0;i<particles.length;i++){
+      for (let j=i+1;j<particles.length;j++){
+        const a=particles[i], b=particles[j];
+        const d = Math.hypot(a.x-b.x, a.y-b.y);
+        if (d < 130){
+          ctx.strokeStyle = `rgba(91,63,191,${(1-d/130)*.25})`;
+          ctx.beginPath(); ctx.moveTo(a.x,a.y); ctx.lineTo(b.x,b.y); ctx.stroke();
+        }
+      }
+    }
+    particles.forEach(p=>{
+      ctx.fillStyle = 'rgba(232,178,61,.55)';
+      ctx.beginPath(); ctx.arc(p.x,p.y,p.r,0,7); ctx.fill();
+    });
+    requestAnimationFrame(step);
+  }
+  step();
+})();
+
+/* ============================================================
+   BOOT
+   ============================================================ */
+loadSave();
+document.getElementById('xpVal').textContent = STATE.xp;
+
+(function resumeSession(){
+  const validScenes = ['id','title','map','mission','diary','survey','admin','end'];
+  let resumeScene = validScenes.includes(STATE.lastScene) ? STATE.lastScene : 'id';
+  // Se já tiver participante, não mostra a tela de identificação
+  if (resumeScene === 'id' && STATE.participant) resumeScene = 'title';
+  if (resumeScene === 'end' && Object.keys(STATE.completed).length < 9) resumeScene = 'map';
+  if (resumeScene === 'mission' && STATE.currentSector && sectorUnlocked(STATE.currentSector)){
+    enterSector(STATE.currentSector);
+  } else {
+    goTo(resumeScene);
+  }
+})();
+
+setTimeout(() => {
+  const loader = document.getElementById('bootLoader');
+  if (loader) loader.classList.add('hidden');
+}, 1600);
+</script>
+</body>
+</html>
