@@ -1,0 +1,760 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no">
+<title>CIPHER HORIZON — Pesquisa</title>
+<style>
+/* ===== RESET E BASE ===== */
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%;overflow:hidden;overscroll-behavior:contain;background:#0b0e1a;color:#eae7dc;font-family:'Inter',sans-serif}
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap');
+:root{--neon-cyan:#00f3ff;--neon-purple:#bc13fe;--neon-gold:#ffd700;--bg:#0b0e1a;--bg2:#070911;--panel:rgba(10,15,30,0.85);--panel-border:#2b334d;--text:#eae7dc;--text-dim:#93a0bf;--serif:'Orbitron',sans-serif;--sans:'Inter',sans-serif;--mono:'JetBrains Mono',monospace}
+/* ===== BACKGROUND ===== */
+#bgfx{position:fixed;inset:0;z-index:0;background:radial-gradient(circle at 20% 30%,#0f1a2e,#05080f)}
+.cyber-grid{position:fixed;inset:0;background-image:linear-gradient(rgba(0,243,255,0.04) 1px,transparent 1px),linear-gradient(90deg,rgba(0,243,255,0.04) 1px,transparent 1px);background-size:50px 50px;animation:gridScroll 20s linear infinite;z-index:0;pointer-events:none}
+@keyframes gridScroll{0%{transform:translateY(0)}100%{transform:translateY(50px)}}
+canvas#particles{position:fixed;inset:0;z-index:0;pointer-events:none}
+/* ===== LOADER ===== */
+#loader{position:fixed;inset:0;z-index:9999;background:var(--bg2);display:flex;flex-direction:column;align-items:center;justify-content:center;transition:opacity 0.8s}
+#loader.hidden{opacity:0;pointer-events:none}
+#loader h1{font-family:var(--serif);font-size:3rem;font-weight:900;background:linear-gradient(45deg,var(--neon-cyan),var(--neon-purple),var(--neon-gold));-webkit-background-clip:text;background-clip:text;color:transparent;letter-spacing:0.2em;animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.5}}
+.loader-bar{width:200px;height:4px;background:rgba(0,243,255,0.2);border-radius:2px;margin-top:1rem;overflow:hidden}
+.loader-progress{width:100%;height:100%;background:var(--neon-cyan);animation:load 1.8s ease-in-out infinite}
+@keyframes load{0%{transform:translateX(-100%)}100%{transform:translateX(100%)}}
+/* ===== APP ===== */
+#app{position:relative;z-index:1;width:100%;height:100%;overflow-y:auto;overscroll-behavior:contain;padding-bottom:20px}
+::-webkit-scrollbar{width:6px}
+::-webkit-scrollbar-thumb{background:var(--panel-border);border-radius:4px}
+/* ===== HUD ===== */
+#hud{position:sticky;top:0;z-index:10;display:flex;justify-content:space-between;align-items:center;padding:14px 20px;background:linear-gradient(180deg,rgba(7,9,17,0.95),rgba(7,9,17,0));backdrop-filter:blur(4px)}
+.hud-left{display:flex;align-items:center;gap:14px;font-family:var(--mono);font-size:13px;color:var(--text-dim)}
+.hud-title{font-family:var(--serif);font-size:18px;color:var(--neon-gold);cursor:pointer;letter-spacing:1px}
+.xp-pill{background:var(--panel);border:1px solid var(--panel-border);border-radius:20px;padding:4px 14px;display:flex;align-items:center;gap:6px}
+.xp-pill b{color:var(--neon-cyan)}
+.mode-badge{border-radius:20px;padding:4px 12px;font-family:var(--mono);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px}
+.mode-badge.real{background:rgba(91,63,191,0.25);color:var(--neon-purple);border:1px solid var(--neon-purple)}
+.mode-badge.analogy{background:rgba(184,134,11,0.22);color:var(--neon-gold);border:1px solid var(--neon-gold)}
+.hud-right{display:flex;gap:8px}
+.icon-btn{width:38px;height:38px;border-radius:10px;background:var(--panel);border:1px solid var(--panel-border);color:var(--text-dim);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:16px;transition:0.2s}
+.icon-btn:hover{border-color:var(--neon-cyan);color:var(--neon-cyan)}
+/* ===== SCENES ===== */
+.scene{display:none;flex-direction:column;align-items:center;padding:40px 20px 80px;min-height:100%;width:100%;max-width:1100px;margin:0 auto}
+.scene.active{display:flex;animation:fadeIn 0.4s ease}
+@keyframes fadeIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+/* ===== IDENTIFICACAO ===== */
+#scene-id .panel{background:var(--panel);border:1px solid var(--panel-border);border-radius:16px;padding:24px;max-width:440px;width:100%}
+.field{margin-bottom:14px}
+.field label{display:block;font-size:12px;color:var(--text-dim);margin-bottom:4px;font-family:var(--mono);text-transform:uppercase;letter-spacing:0.5px}
+.field input,.field select{width:100%;background:#0f1526;border:1px solid var(--panel-border);border-radius:8px;padding:10px 12px;color:var(--text);font-family:var(--mono);font-size:14px}
+.field input:focus,.field select:focus{outline:none;border-color:var(--neon-cyan);box-shadow:0 0 15px rgba(0,243,255,0.2)}
+.btn{font-family:var(--sans);font-weight:600;font-size:14px;border-radius:10px;padding:12px 22px;border:1px solid var(--panel-border);background:rgba(255,255,255,0.05);color:var(--text);cursor:pointer;transition:0.2s}
+.btn:hover{border-color:var(--neon-cyan);transform:translateY(-2px);box-shadow:0 6px 18px rgba(0,243,255,0.2)}
+.btn.primary{background:linear-gradient(135deg,var(--neon-purple),#6a1bb8);border-color:var(--neon-purple);color:#fff}
+.btn.gold{background:linear-gradient(135deg,var(--neon-gold),#b8860b);border-color:var(--neon-gold);color:#1a1300}
+.btn.admin{background:linear-gradient(135deg,var(--neon-cyan),#0088aa);border-color:var(--neon-cyan);color:#000}
+.btn:disabled{opacity:0.4;cursor:not-allowed;transform:none;box-shadow:none}
+/* ===== MAPA ===== */
+.map-wrap{width:100%;max-width:980px;margin-top:20px}
+.map-title{font-family:var(--serif);font-size:26px;color:var(--neon-gold)}
+.map-sub{color:var(--text-dim);font-size:13px;margin-bottom:20px}
+.node-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px}
+.node{background:var(--panel);border:1px solid var(--panel-border);border-radius:14px;padding:18px;cursor:pointer;transition:0.2s}
+.node:hover:not(.locked){border-color:var(--neon-gold);transform:translateY(-3px);box-shadow:0 8px 24px rgba(255,215,0,0.15)}
+.node.locked{opacity:0.4;cursor:not-allowed}
+.node.done{border-color:var(--neon-cyan)}
+.node-num{font-family:var(--mono);color:var(--text-dim);font-size:12px}
+.node-name{font-family:var(--serif);font-size:17px;margin:4px 0}
+.node-concept{font-size:12px;color:var(--text-dim)}
+.node-check{color:var(--neon-cyan);font-size:16px;float:right}
+/* ===== MISSAO ===== */
+#scene-mission{padding-top:20px;max-width:1100px;margin:0 auto;width:100%}
+.mission-topbar{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:4px}
+.mission-name{font-family:var(--serif);font-size:24px;color:var(--neon-gold)}
+.mission-concept{font-family:var(--mono);font-size:12px;color:var(--text-dim)}
+.oracle-box{display:flex;gap:14px;background:var(--panel);border:1px solid var(--panel-border);border-radius:14px;padding:16px 18px;margin:16px 0 22px}
+.oracle-portrait{width:52px;height:52px;flex:0 0 auto;border-radius:50%;background:radial-gradient(circle at 35% 30%,var(--neon-cyan),var(--neon-purple));box-shadow:0 0 30px rgba(0,243,255,0.4)}
+.oracle-text{font-size:14px;line-height:1.6}
+.oracle-name{font-family:var(--mono);font-size:11px;color:var(--neon-cyan);letter-spacing:1px;text-transform:uppercase}
+.mission-body{display:flex;flex-direction:column;gap:18px;width:100%}
+.panel{background:var(--panel);border:1px solid var(--panel-border);border-radius:16px;padding:20px;backdrop-filter:blur(10px);width:100%}
+.panel-title{font-family:var(--serif);font-size:15px;color:var(--neon-gold);text-transform:uppercase;letter-spacing:1px;margin:0 0 10px}
+.tag{display:inline-block;font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;border-radius:6px;padding:3px 10px;margin-bottom:10px}
+.tag.real{background:rgba(91,63,191,0.22);color:var(--neon-purple);border:1px solid var(--neon-purple)}
+.tag.analogy{background:rgba(184,134,11,0.2);color:var(--neon-gold);border:1px solid var(--neon-gold)}
+.result-box{font-family:var(--mono);font-size:14px;background:#0f1526;border:1px solid var(--panel-border);border-radius:10px;padding:12px 14px;word-break:break-all;color:var(--neon-cyan)}
+.result-box.bad{color:#e24e4e}
+.plain{font-size:13.5px;color:var(--text-dim);border-top:1px dashed var(--panel-border);padding-top:10px;margin-top:14px}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.row .field{flex:1;min-width:140px;margin-bottom:0}
+/* ===== DISCO DE CESAR ===== */
+.cipher-container{display:grid;grid-template-columns:1fr 1fr;gap:30px;align-items:center}
+@media(max-width:720px){.cipher-container{grid-template-columns:1fr}}
+.cipher-wheel-wrap{position:relative;width:300px;height:300px;margin:0 auto}
+.cipher-wheel{width:100%;height:100%;border-radius:50%;border:3px solid var(--neon-cyan);background:radial-gradient(circle,rgba(0,243,255,0.08) 0%,transparent 70%);box-shadow:0 0 40px rgba(0,243,255,0.3);position:relative;touch-action:none}
+.cipher-wheel canvas{width:100%;height:100%;border-radius:50%;cursor:grab;display:block}
+.cipher-wheel:active canvas{cursor:grabbing}
+.cipher-controls{display:flex;flex-direction:column;gap:14px}
+.cipher-controls label{color:var(--neon-cyan);font-family:var(--mono);font-size:12px;text-transform:uppercase;letter-spacing:0.5px}
+.cipher-controls input[type="text"]{background:#0f1526;border:1px solid var(--panel-border);border-radius:8px;padding:10px 12px;color:var(--text);font-family:var(--mono);font-size:14px;width:100%}
+.cipher-controls input[type="text"]:focus{outline:none;border-color:var(--neon-cyan)}
+.shift-display{text-align:center;font-family:var(--serif);font-size:2.5rem;color:var(--neon-gold);text-shadow:0 0 20px rgba(255,215,0,0.3)}
+.cipher-buttons{display:flex;gap:10px;flex-wrap:wrap}
+.cipher-buttons .btn{flex:1}
+.freq-bars{display:flex;align-items:flex-end;gap:2px;height:80px;margin-top:8px}
+.freq-bars div{flex:1;background:#ffd700;opacity:0.7;border-radius:2px 2px 0 0}
+/* ===== PIPELINE ===== */
+.pipeline-flow{display:flex;flex-direction:column;gap:10px;margin:10px 0}
+.pipe-step{display:flex;align-items:center;gap:12px;background:#0f1526;border-radius:8px;padding:10px 14px;border-left:4px solid var(--panel-border);transition:0.3s}
+.pipe-step.active{border-left-color:var(--neon-cyan);background:#141f30}
+.pipe-step .step-icon{font-size:20px;width:30px;text-align:center}
+.pipe-step .step-name{font-family:var(--mono);font-size:13px;color:var(--text)}
+.pipe-step .step-desc{font-size:11px;color:var(--text-dim);margin-left:auto}
+/* ===== VISUALIZACOES ===== */
+.visual-canvas{width:100%;max-width:600px;height:300px;background:#0f1526;border:1px solid var(--panel-border);border-radius:10px;margin:10px 0}
+.progress-bar{width:100%;height:8px;background:#0f1526;border-radius:4px;overflow:hidden;margin:8px 0}
+.progress-fill{height:100%;background:linear-gradient(90deg,var(--neon-cyan),var(--neon-purple));border-radius:4px;transition:width 0.5s}
+.key-display{font-family:var(--mono);font-size:11px;background:#0f1526;border:1px solid var(--panel-border);border-radius:8px;padding:10px;word-break:break-all;color:var(--neon-cyan)}
+.compare-table{width:100%;border-collapse:collapse;font-size:13px;margin-top:10px}
+.compare-table th{text-align:left;padding:8px;border-bottom:2px solid var(--panel-border);color:var(--neon-cyan);font-family:var(--mono);font-size:11px;text-transform:uppercase}
+.compare-table td{padding:8px;border-bottom:1px solid #1a2035;color:var(--text-dim)}
+.step-box{background:#0f1526;border-left:3px solid var(--neon-cyan);border-radius:0 8px 8px 0;padding:12px 14px;margin:8px 0;font-size:13px}
+.step-box .step-num{color:var(--neon-cyan);font-family:var(--mono);font-size:11px;font-weight:700}
+.lock-visual{display:flex;align-items:center;justify-content:center;gap:30px;padding:20px;flex-wrap:wrap}
+.lock-box{width:80px;height:80px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:28px;border:2px solid var(--panel-border);background:#0f1526;transition:0.3s}
+.lock-box.locked{border-color:var(--neon-purple);color:var(--neon-purple);box-shadow:0 0 20px rgba(188,19,254,0.2)}
+.lock-box.unlocked{border-color:var(--neon-cyan);color:var(--neon-cyan);box-shadow:0 0 20px rgba(0,243,255,0.2)}
+.arrow-anim{font-size:24px;color:var(--text-dim);animation:arrowBounce 1.5s infinite}
+@keyframes arrowBounce{0%,100%{transform:translateX(0)}50%{transform:translateX(10px)}}
+/* ===== QUIZ ===== */
+#quiz-overlay{position:fixed;inset:0;background:rgba(5,6,12,0.9);backdrop-filter:blur(6px);z-index:20;display:flex;align-items:center;justify-content:center}
+#quiz-overlay.hidden{display:none}
+.quiz-card{width:min(560px,92vw);background:var(--panel);border:1px solid var(--panel-border);border-radius:18px;padding:26px}
+.quiz-progress{font-family:var(--mono);font-size:11px;color:var(--text-dim);margin-bottom:10px}
+.quiz-q{font-family:var(--serif);font-size:19px;margin-bottom:16px}
+.quiz-opt{display:block;width:100%;text-align:left;background:rgba(255,255,255,0.05);border:1px solid var(--panel-border);border-radius:10px;padding:12px 14px;margin-bottom:10px;color:var(--text);cursor:pointer;font-size:14px;transition:0.15s}
+.quiz-opt:hover{border-color:var(--neon-cyan)}
+.quiz-opt.correct{border-color:var(--neon-cyan);background:rgba(0,243,255,0.12)}
+.quiz-opt.wrong{border-color:#e24e4e;background:rgba(226,78,78,0.12)}
+.quiz-explain{font-size:13px;color:var(--text-dim);margin-top:12px;line-height:1.6;border-top:1px dashed var(--panel-border);padding-top:12px}
+/* ===== TOAST ===== */
+#toast-container{position:fixed;bottom:22px;right:22px;z-index:50;display:flex;flex-direction:column;gap:10px}
+.toast{background:var(--panel);border:1px solid var(--neon-gold);border-radius:12px;padding:12px 16px;min-width:200px;box-shadow:0 10px 26px rgba(0,0,0,0.4);animation:slideIn 0.35s ease}
+@keyframes slideIn{from{opacity:0;transform:translateX(30px)}to{opacity:1;transform:translateX(0)}}
+.toast-title{font-family:var(--mono);font-size:10px;color:var(--neon-gold);letter-spacing:1px;text-transform:uppercase}
+.toast-body{font-family:var(--serif);font-size:14.5px;margin-top:2px}
+/* ===== DIARIO ===== */
+#diaryList{display:flex;flex-direction:column;gap:12px;width:100%}
+.diary-entry{background:var(--panel);border:1px solid var(--panel-border);border-radius:12px;padding:16px}
+.diary-entry.locked{opacity:0.35}
+.diary-term{font-family:var(--serif);font-size:16px;color:var(--neon-gold)}
+.diary-def{font-size:13px;color:var(--text-dim);margin-top:4px}
+/* ===== SURVEY ===== */
+#scene-survey .panel{max-width:640px;width:100%}
+.radio-group{display:flex;gap:14px;flex-wrap:wrap;margin:8px 0}
+.radio-group label{display:flex;align-items:center;gap:6px;font-size:14px;color:var(--text-dim);cursor:pointer}
+.radio-group input[type="radio"]{accent-color:var(--neon-cyan);width:16px;height:16px}
+textarea{width:100%;background:#0f1526;border:1px solid var(--panel-border);border-radius:8px;padding:10px;color:var(--text);font-family:var(--mono);font-size:13px;resize:vertical;min-height:80px}
+textarea:focus{outline:none;border-color:var(--neon-cyan)}
+/* ===== ADMIN ===== */
+#scene-admin .panel{max-width:720px;width:100%}
+#adminLoginView input{width:100%;max-width:280px;margin-bottom:10px}
+#adminDashboardView .stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin:14px 0}
+#adminDashboardView .stat-card{background:#0f1526;padding:12px;border-radius:8px;text-align:center}
+#adminDashboardView .stat-card .num{font-family:var(--serif);font-size:28px;color:var(--neon-cyan)}
+#adminDashboardView .stat-card .lbl{font-size:11px;color:var(--text-dim)}
+.admin-table{width:100%;border-collapse:collapse;font-size:12px;margin-top:10px}
+.admin-table th{text-align:left;padding:6px;border-bottom:1px solid var(--panel-border);color:var(--neon-cyan);font-family:var(--mono);font-size:10px;text-transform:uppercase}
+.admin-table td{padding:6px;border-bottom:1px solid #1a2035;word-break:break-all}
+/* ===== END ===== */
+.end-cert{max-width:640px;text-align:center}
+.achievement-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px;margin:16px 0}
+.ach-card{background:#0f1526;border:1px solid var(--panel-border);border-radius:10px;padding:10px 14px;font-size:12px}
+.ach-card.unlocked{border-color:var(--neon-gold)}
+.ach-card.locked{opacity:0.4}
+/* ===== RESPONSIVE ===== */
+@media(max-width:600px){
+.hud-title{font-size:14px}.xp-pill{font-size:11px;padding:2px 10px}.mission-name{font-size:20px}
+.cipher-wheel-wrap{width:220px;height:220px}.shift-display{font-size:2rem}
+.lock-visual{gap:15px}.lock-box{width:60px;height:60px;font-size:22px}
+.node-grid{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+<!-- LOADER -->
+<div id="loader"><h1>CIPHER HORIZON</h1><div class="loader-bar"><div class="loader-progress"></div></div><p style="color:var(--text-dim);margin-top:1rem;font-family:var(--mono);font-size:12px;">Inicializando laboratório...</p></div>
+<!-- BACKGROUND -->
+<div id="bgfx"></div><div class="cyber-grid"></div><canvas id="particles"></canvas>
+<!-- HUD -->
+<div id="hud">
+<div class="hud-left"><span class="hud-title" onclick="navigateTo('map')">CIPHER HORIZON</span><span class="xp-pill">⚡ <b id="xpVal">0</b> XP</span><span id="modeBadge" class="mode-badge analogy" style="display:none;"></span></div>
+<div class="hud-right"><div class="icon-btn" onclick="navigateTo('diary')" title="Diário">📖</div><div class="icon-btn" onclick="navigateTo('map')" title="Mapa">🗺️</div></div>
+</div>
+<div id="app">
+<!-- IDENTIFICAÇÃO -->
+<section id="scene-id" class="scene active">
+<h1 style="font-family:var(--serif);font-size:min(7vw,48px);color:var(--neon-gold);">CIPHER HORIZON</h1>
+<div style="color:var(--neon-cyan);font-style:italic;margin-bottom:20px;">Pesquisa sobre Ensino de Criptografia</div>
+<div class="panel"><div class="panel-title">Perfil do Participante</div>
+<div class="plain" style="border:none;padding:0;margin-bottom:16px;">Seus dados são usados apenas para esta pesquisa. Você pode usar um apelido ou deixar o nome em branco para ser anônimo.</div>
+<div class="field"><label>Nome (opcional)</label><input type="text" id="idNome" placeholder="Ex: Ana, ou deixe em branco"></div>
+<div class="field"><label>Idade</label><input type="number" id="idIdade" min="8" max="99" placeholder="Ex: 17"></div>
+<div class="field"><label>Curso / Área de estudo</label><input type="text" id="idCurso" placeholder="Ex: Ciência da Computação, Engenharia..."></div>
+<div class="field"><label>Nível de conhecimento em criptografia</label>
+<select id="idNivel"><option value="nenhum">Nenhum — nunca estudei</option><option value="basico">Básico — já ouvi falar de cifras</option><option value="intermediario">Intermediário — sei o que é chave pública</option><option value="avancado">Avançado — já estudei ECC/ECDSA</option></select></div>
+<div id="idError" style="color:#e24e4e;font-size:12.5px;display:none;margin-bottom:10px;">Preencha idade e curso.</div>
+<button class="btn primary" style="width:100%;" onclick="submitIdentification()">Iniciar Jornada →</button>
+</div></section>
+<!-- TITLE -->
+<section id="scene-title" class="scene">
+<h1 style="font-family:var(--serif);font-size:min(9vw,64px);background:linear-gradient(135deg,var(--neon-gold),#fff2cf 40%,var(--neon-purple));-webkit-background-clip:text;background-clip:text;color:transparent;">CIPHER HORIZON</h1>
+<div style="color:var(--neon-cyan);font-style:italic;font-size:20px;margin:6px 0 20px;">The Elliptic Frontier — Laboratório de Pesquisa</div>
+<p style="max-width:560px;color:var(--text-dim);font-size:14.5px;line-height:1.7;text-align:center;margin-bottom:30px;">Você foi recrutado para explorar o motor matemático que sustenta a criptografia moderna. Domine 9 setores — da Cifra de César ao pipeline CUDA com inversão em lote e caminhada do canguru.</p>
+<div style="display:flex;gap:14px;flex-wrap:wrap;justify-content:center;">
+<button class="btn primary" onclick="navigateTo('map')">Iniciar Jornada</button>
+<button class="btn" onclick="navigateTo('diary')">Diário</button>
+<button class="btn admin" onclick="openAdmin()">🔐 Admin</button>
+</div></section>
+<!-- MAPA -->
+<section id="scene-map" class="scene"><div class="map-wrap"><div class="map-title">Mapa da Rede Umbral</div><div class="map-sub">Selecione um setor para restaurar.</div><div class="node-grid" id="nodeGrid"></div></div></section>
+<!-- MISSAO -->
+<section id="scene-mission" class="scene"><div class="mission-topbar"><div><div class="mission-name" id="missionName">—</div><div class="mission-concept" id="missionConcept">—</div></div><button class="btn" onclick="navigateTo('map')">← Mapa</button></div><div class="oracle-box"><div class="oracle-portrait"></div><div><div class="oracle-name">ORACLE</div><div class="oracle-text" id="oracleText">...</div></div></div><div class="mission-body" id="missionBody"></div><div class="mission-footer" style="display:flex;justify-content:flex-end;margin-top:20px;"><button class="btn gold" id="missionCompleteBtn" onclick="finishMission()" disabled>Concluir Setor →</button></div></section>
+<!-- DIARIO -->
+<section id="scene-diary" class="scene"><div class="map-wrap"><div class="map-title">Diário Criptográfico</div><div class="map-sub">Glossário que cresce com você.</div><div id="diaryList"></div></div></section>
+<!-- SURVEY -->
+<section id="scene-survey" class="scene">
+<div class="panel">
+<div class="tag real">PESQUISA CIENTÍFICA</div>
+<div class="panel-title">Sua opinião é importante</div>
+<p style="color:var(--text-dim);font-size:14px;margin-bottom:16px;">Ajude a melhorar o ensino de criptografia respondendo às perguntas abaixo.</p>
+<div class="field"><label>1. Como você classificaria a dificuldade dos conteúdos apresentados?</label>
+<div class="radio-group"><label><input type="radio" name="dificuldade" value="facil"> Fácil</label><label><input type="radio" name="dificuldade" value="medio"> Médio</label><label><input type="radio" name="dificuldade" value="dificil"> Difícil</label></div></div>
+<div class="field"><label>2. O que você achou mais interessante ou útil?</label><textarea id="feedbackInteresse" placeholder="Ex: O disco de César, a explicação sobre curvas elípticas, o pipeline CUDA..."></textarea></div>
+<div class="field"><label>3. O que poderia ser melhorado?</label><textarea id="feedbackMelhoria" placeholder="Sugestões para tornar o conteúdo mais claro ou engajador..."></textarea></div>
+<div class="field"><label>4. Comentários adicionais (opcional)</label><textarea id="feedbackLivre" placeholder="Espaço livre para suas observações..."></textarea></div>
+<button class="btn primary" style="width:100%;" onclick="submitSurvey()">Enviar Respostas e Finalizar</button>
+</div></section>
+<!-- ADMIN -->
+<section id="scene-admin" class="scene">
+<div class="panel">
+<div class="panel-title" style="text-align:center;">🔐 Painel Administrativo</div>
+<div id="adminLoginView">
+<p style="color:var(--text-dim);margin-bottom:10px;">Digite a senha de administrador:</p>
+<input type="password" id="adminPassInput" placeholder="Senha" style="width:100%;max-width:280px;background:#0f1526;border:1px solid var(--panel-border);border-radius:8px;padding:10px;color:var(--text);font-family:var(--mono);">
+<div id="adminError" style="color:#e24e4e;display:none;margin:10px 0;">Senha incorreta.</div>
+<button class="btn primary" onclick="adminLogin()">Entrar</button>
+<button class="btn" onclick="navigateTo('title')" style="margin-left:10px;">Voltar</button>
+</div>
+<div id="adminDashboardView" style="display:none;">
+<div id="adminStats"></div>
+<div style="margin:14px 0;"><button class="btn gold" onclick="exportAdminData()">⬇️ Exportar JSON</button> <button class="btn" onclick="navigateTo('map')">Voltar</button></div>
+<div style="overflow-x:auto;"><div id="adminTable"></div></div>
+</div>
+</div></section>
+<!-- END -->
+<section id="scene-end" class="scene"><div class="panel end-cert"><div class="tag real">CAMPANHA CONCLUÍDA</div><h2 style="font-family:var(--serif);color:var(--neon-gold);">Guardião da Rede Umbral</h2><p style="color:var(--text-dim);">Você restaurou os 9 setores. XP final: <b id="finalXp" style="color:var(--neon-cyan);"></b></p><p style="color:var(--text-dim);font-size:12.5px;">Obrigado por participar da pesquisa! Seus dados foram salvos localmente.</p><div class="achievement-grid" id="endAchievements"></div><button class="btn primary" onclick="navigateTo('map')">Rever Mapa</button></div></section>
+</div>
+<!-- TOASTS -->
+<div id="toast-container"></div>
+<!-- QUIZ -->
+<div id="quiz-overlay" class="hidden"><div class="quiz-card" id="quizCard"></div></div>
+
+<script>
+/* =================================================================
+   CIPHERCORE — Matemática real (com inversão em lote e canguru)
+   ================================================================= */
+const CipherCore=(()=>{
+function mod(a,m){const r=a%m;return r<0n?r+m:r}
+function modInverse(a,m){a=mod(a,m);let[old_r,r]=[a,m];let[old_s,s]=[1n,0n];while(r!==0n){const q=old_r/r;[old_r,r]=[r,old_r-q*r];[old_s,s]=[s,old_s-q*s]}if(old_r!==1n)throw new Error("inverso não existe");return mod(old_s,m)}
+function caesarShift(text,shift){shift=((shift%26)+26)%26;return text.split('').map(ch=>{const code=ch.charCodeAt(0);if(code>=65&&code<=90)return String.fromCharCode((code-65+shift)%26+65);if(code>=97&&code<=122)return String.fromCharCode((code-97+shift)%26+97);return ch}).join('')}
+function textToBytes(t){return new TextEncoder().encode(t)}
+function bytesToHex(b){return Array.from(b).map(x=>x.toString(16).padStart(2,'0')).join('')}
+function hexToBytes(h){const a=[];for(let i=0;i<h.length;i+=2)a.push(parseInt(h.substr(i,2),16));return new Uint8Array(a)}
+function xorBytes(a,kb){const out=new Uint8Array(a.length);for(let i=0;i<a.length;i++)out[i]=a[i]^kb[i%kb.length];return out}
+function xorEncryptHex(p,k){return bytesToHex(xorBytes(textToBytes(p),textToBytes(k)))}
+function xorDecryptHex(h,k){const bytes=xorBytes(hexToBytes(h),textToBytes(k));return new TextDecoder().decode(bytes)}
+const INF="INF";function isInf(P){return P===INF}
+function pointAdd(P,Q,a,p){if(isInf(P))return Q;if(isInf(Q))return P;let[x1,y1]=P,[x2,y2]=Q;if(x1===x2&&mod(y1+y2,p)===0n)return INF;let lambda;if(x1===x2&&y1===y2){lambda=mod((3n*x1*x1+a)*modInverse(2n*y1,p),p)}else{lambda=mod((y2-y1)*modInverse(x2-x1,p),p)}const x3=mod(lambda*lambda-x1-x2,p);const y3=mod(lambda*(x1-x3)-y1,p);return[x3,y3]}
+function scalarMul(k,P,a,p){let result=INF,addend=P,kk=k;while(kk>0n){if((kk&1n)===1n)result=pointAdd(result,addend,a,p);addend=pointAdd(addend,addend,a,p);kk>>=1n}return{point:result}}
+function allCurvePoints(a,b,p){const pts=[];for(let x=0n;x<p;x++){const rhs=mod(x*x*x+a*x+b,p);for(let y=0n;y<p;y++)if(mod(y*y,p)===rhs)pts.push([x,y])}return pts}
+// ---- Batch inversion (Montgomery) ----
+function batchInvert(fieldElements, p){
+const n=fieldElements.length;
+if(n===0)return [];
+const prefix=[1n];
+for(let i=0;i<n;i++){prefix.push(mod(prefix[i]*fieldElements[i],p));}
+const invTotal=modInverse(prefix[n],p);
+const inverses=[];let acc=invTotal;
+for(let i=n-1;i>=0;i--){inverses[i]=mod(acc*prefix[i],p);acc=mod(acc*fieldElements[i],p);}
+return inverses;
+}
+// ---- Pollard Kangaroo (simplificado) ----
+function kangarooSearch(G, Q, a, p, lower, upper, maxSteps=2000){
+const n=upper-lower+1;
+const jumpSizes=[];for(let i=0;i<64;i++)jumpSizes.push(BigInt(Math.floor(Math.random()*Math.sqrt(n))+1));
+function nextPoint(P, dist, jumps){const idx=Number(P[0]%BigInt(jumps.length));const j=jumps[idx];const R=scalarMul(j,G,a,p).point;if(isInf(R))return{point:P,dist:dist};return{point:pointAdd(P,R,a,p),dist:dist+j}}
+let tame={point:G,dist:0n};for(let i=0;i<maxSteps;i++){tame=nextPoint(tame.point,tame.dist,jumpSizes);if(tame.point[0]===Q[0]&&tame.point[1]===Q[1])return tame.dist;}
+let wild={point:Q,dist:0n};for(let i=0;i<maxSteps;i++){wild=nextPoint(wild.point,wild.dist,jumpSizes);if(wild.point[0]===G[0]&&wild.point[1]===G[1])return lower+wild.dist;}
+for(let k=lower;k<=upper;k++){const R=scalarMul(k,G,a,p).point;if(R[0]===Q[0]&&R[1]===Q[1])return k;}
+return null;
+}
+const secp256k1={p:2n**256n-2n**32n-977n,a:0n,b:7n,Gx:55066263022277343669578718895168534326250603453777594175500187360389116729240n,Gy:32670510020758816978083085130507043184471273380659243275938904335757337482424n,n:115792089237316195423570985008687907852837564279074904382605163141518161494337n};secp256k1.G=[secp256k1.Gx,secp256k1.Gy];
+function randomBigIntBits(bits){const bytes=new Uint8Array(bits/8);crypto.getRandomValues(bytes);return BigInt('0x'+Array.from(bytes).map(b=>b.toString(16).padStart(2,'0')).join(''))}
+function generatePrivateKey(){let k;do{k=randomBigIntBits(256)%secp256k1.n}while(k===0n);return k}
+async function sha256Hex(msg){const enc=new TextEncoder().encode(msg);const digest=await crypto.subtle.digest('SHA-256',enc);return Array.from(new Uint8Array(digest)).map(b=>b.toString(16).padStart(2,'0')).join('')}
+async function ecdsaSign(message,privKey){const hashHex=await sha256Hex(message);const z=BigInt('0x'+hashHex)%secp256k1.n;let r=0n,s=0n,k;do{k=generatePrivateKey();const R=scalarMul(k,secp256k1.G,secp256k1.a,secp256k1.p).point;if(isInf(R))continue;r=mod(R[0],secp256k1.n);if(r===0n)continue;const kInv=modInverse(k,secp256k1.n);s=mod(kInv*(z+r*privKey),secp256k1.n)}while(r===0n||s===0n);return{r,s,z,hashHex}}
+async function ecdsaVerify(message,sig,pubKey){const hashHex=await sha256Hex(message);const z=BigInt('0x'+hashHex)%secp256k1.n;const{r,s}=sig;if(r<=0n||r>=secp256k1.n||s<=0n||s>=secp256k1.n)return false;const sInv=modInverse(s,secp256k1.n);const u1=mod(z*sInv,secp256k1.n),u2=mod(r*sInv,secp256k1.n);const P1=scalarMul(u1,secp256k1.G,secp256k1.a,secp256k1.p).point;const P2=scalarMul(u2,pubKey,secp256k1.a,secp256k1.p).point;const R=pointAdd(P1,P2,secp256k1.a,secp256k1.p);if(isInf(R))return false;return mod(R[0],secp256k1.n)===mod(r,secp256k1.n)}
+return{mod,modInverse,caesarShift,xorEncryptHex,xorDecryptHex,bytesToHex,hexToBytes,xorBytes,textToBytes,pointAdd,scalarMul,allCurvePoints,INF,isInf,secp256k1,generatePrivateKey,sha256Hex,ecdsaSign,ecdsaVerify,batchInvert,kangarooSearch}
+})();
+
+/* =================================================================
+   HASH DE SENHA (SHA-256)
+   ================================================================= */
+async function hashPassword(str){
+const buf=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(str));
+return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
+}
+// Senha padrão: admin
+// Hash SHA-256 de "admin" = 8c6976e5b5410415bde908bd4dee15dfb167a9c873fc4bb8a81f6f2ab448a918
+// Para trocar a senha, gere um novo hash no console:
+// await hashPassword("sua_senha") e substitua abaixo.
+const ADMIN_HASH = "8c6976e5b5410415bde908bd4dee15dfb167a9c873fc4bb8a81f6f2ab448a918";
+
+/* =================================================================
+   ESTADO DO JOGO
+   ================================================================= */
+const STORAGE_KEY='cipher_horizon_session';
+let STATE={xp:0,completed:{},currentSector:null,diaryUnlocked:[],achievements:[],participant:null,quizScores:{},submitted:false,currentScene:'id',sectorProgress:{},surveyDone:false};
+function loadSave(){try{const raw=sessionStorage.getItem(STORAGE_KEY);if(raw){const parsed=JSON.parse(raw);STATE=Object.assign(STATE,parsed)}}catch(e){}}
+function save(){try{sessionStorage.setItem(STORAGE_KEY,JSON.stringify(STATE))}catch(e){}}
+function restoreScene(){
+if(STATE.participant&&STATE.currentScene&&STATE.currentScene!=='id'){
+if(document.getElementById('scene-'+STATE.currentScene))navigateTo(STATE.currentScene);
+else navigateTo('title');
+}else if(STATE.participant)navigateTo('title');
+}
+function submitIdentification(){
+const nome=document.getElementById('idNome').value.trim();
+const idade=parseInt(document.getElementById('idIdade').value,10);
+const curso=document.getElementById('idCurso').value.trim();
+const nivel=document.getElementById('idNivel').value;
+const err=document.getElementById('idError');
+if(!idade||idade<8||idade>99||!curso){err.style.display='block';return}
+err.style.display='none';
+STATE={xp:0,completed:{},currentSector:null,diaryUnlocked:[],achievements:[],quizScores:{},submitted:false,currentScene:'title',sectorProgress:{},surveyDone:false,
+participant:{id:'p_'+Date.now().toString(36)+'_'+Math.random().toString(36).slice(2,8),nome:nome||'Anônimo',idade,curso,nivel,startedAt:new Date().toISOString()}};
+save();navigateTo('title');
+}
+// ---- Salvamento local (substitui o POST) ----
+function saveResultsLocal(){
+try{
+const dataKey='cipher_horizon_data';
+let allData=JSON.parse(localStorage.getItem(dataKey)||'[]');
+const existing=allData.findIndex(d=>d.id===STATE.participant.id);
+const entry={...STATE.participant,xp:STATE.xp,setoresConcluidos:Object.keys(STATE.completed).length,conquistas:STATE.achievements,quizPorSetor:STATE.quizScores,dificuldade:STATE.dificuldade||null,feedback:STATE.feedback||null,finalizadoEm:new Date().toISOString()};
+if(existing>=0)allData[existing]=entry;
+else allData.push(entry);
+localStorage.setItem(dataKey,JSON.stringify(allData));
+STATE.submitted=true;save();
+return true;
+}catch(e){console.error('Erro ao salvar localmente:',e);return false;}
+}
+function addXP(n){STATE.xp+=n;document.getElementById('xpVal').textContent=STATE.xp;save()}
+function toast(title,body){const c=document.getElementById('toast-container');const el=document.createElement('div');el.className='toast';el.innerHTML='<div class="toast-title">'+title+'</div><div class="toast-body">'+body+'</div>';c.appendChild(el);setTimeout(()=>{el.style.transition='.4s';el.style.opacity='0';setTimeout(()=>el.remove(),400)},3600)}
+function unlockAchievement(id,label){if(STATE.achievements.includes(id))return;STATE.achievements.push(id);save();toast('🏆 Conquista',label)}
+function addDiary(term){if(!STATE.diaryUnlocked.includes(term))STATE.diaryUnlocked.push(term);save()}
+
+/* =================================================================
+   SETORES (9 setores)
+   ================================================================= */
+const SECTORS=[
+{id:1,name:'A Torre de César',concept:'Cifra de César',mode:'analogy',builder:buildSector1,intro:'A última transmissão do Arquiteto está cifrada. Gire o disco até o texto fazer sentido.'},
+{id:2,name:'A Câmara Simétrica',concept:'XOR Simétrico',mode:'real',builder:buildSector2,intro:'Esta câmara só abre com a mesma chave usada para trancá-la. Como combinar a chave sem ninguém ouvir?'},
+{id:3,name:'O Cofre de Dois Cadeados',concept:'Chave Pública (Analogia)',mode:'analogy',builder:buildSector3,intro:'Alice precisa enviar um segredo a Bob sem combinarem uma chave. Observe o protocolo dos dois cadeados.'},
+{id:4,name:'O Observatório de Curvas',concept:'Adição em Curvas Elípticas',mode:'real',builder:buildSector4,intro:'Toda a criptografia moderna repousa numa curva. Trace uma reta entre dois pontos e descubra a regra secreta de soma.'},
+{id:5,name:'secp256k1 e o Gerador',concept:'Double‑and‑Add',mode:'real',builder:buildSector5,intro:'Somar um ponto a si mesmo mil vezes levaria uma eternidade — a menos que você duplique.'},
+{id:6,name:'O Abismo Discreto',concept:'ECDLP e Paralelismo',mode:'real',builder:buildSector6,intro:'Dado um ponto resultado, encontrar o escalar que o gerou é, de propósito, quase impossível.'},
+{id:7,name:'Chaves do Livro‑Razão',concept:'Chaves Pública/Privada',mode:'real',builder:buildSector7,intro:'Sua chave privada é apenas um número — gigantesco e aleatório. Multiplicado pelo ponto G, produz sua chave pública.'},
+{id:8,name:'A Assinatura Final',concept:'ECDSA e Ponta‑a‑Ponta',mode:'real',builder:buildSector8,intro:'A Rede Umbral só será restaurada se você provar que é você quem fala. Assine e verifique.'},
+{id:9,name:'O Pipeline Geométrico',concept:'CUDA + Batch Inversion + Kangaroo',mode:'real',builder:buildSector9,intro:'O coração do motor de busca: veja como Campo Finito, Jacobianas, Batch Inversion, Random Walk, Filtro e Persistência se encadeiam, e encontre uma chave com a caçada do canguru.'},
+];
+function sectorUnlocked(id){if(id===1)return true;return!!STATE.completed[id-1]}
+
+/* =================================================================
+   NAVEGAÇÃO
+   ================================================================= */
+function navigateTo(sceneId){
+document.querySelectorAll('.scene').forEach(s=>s.classList.remove('active'));
+const target=document.getElementById('scene-'+sceneId);
+if(target)target.classList.add('active');
+STATE.currentScene=sceneId;save();
+if(sceneId==='map')renderMap();
+if(sceneId==='diary')renderDiary();
+if(sceneId==='end')renderEndAchievements();
+document.getElementById('app').scrollTop=0;
+}
+function renderMap(){
+const grid=document.getElementById('nodeGrid');grid.innerHTML='';
+SECTORS.forEach(s=>{
+const unlocked=sectorUnlocked(s.id);const done=!!STATE.completed[s.id];
+const div=document.createElement('div');
+div.className='node'+(unlocked?'':' locked')+(done?' done':'');
+div.innerHTML=(done?'<div class="node-check">✔</div>':'')+'<div class="node-num">SETOR '+String(s.id).padStart(2,'0')+'</div><div class="node-name">'+s.name+'</div><div class="node-concept">'+s.concept+'</div>';
+if(unlocked)div.onclick=()=>enterSector(s.id);
+grid.appendChild(div);
+});
+}
+function renderDiary(){
+const list=document.getElementById('diaryList');
+const terms={'Cifra de César':'Deslocamento fixo de letras. Quebrável por força bruta (25 chaves).','XOR / Simétrica':'Mesma chave cifra e decifra. Rápida, mas exige canal seguro.','Chave Pública (analogia)':'Duas partes trocam um segredo aplicando e removendo "cadeados" próprios.','Curva Elíptica':'Curva y² = x³ + ax + b (mod p). Seus pontos formam um grupo.','secp256k1':'Curva real (a=0, b=7) usada pelo Bitcoin.','Double‑and‑Add':'Algoritmo eficiente para k·P usando duplicações guiadas pelos bits.','ECDLP':'Dados P e Q=k·P, achar k é inviável.','Chave Privada/Pública (Bitcoin)':'Privada: número aleatório de 256 bits. Pública: privada × G.','ECDSA':'Assinatura digital sobre curva elíptica.','Pipeline CUDA':'Fluxo: Campo Finito → Jacobianas → Batch Inversion → Random Walk → Filtro → Persistência → Busca.','Batch Inversion':'Agrupar inversões modulares para reduzir o custo computacional.','Caçada do Canguru':'Método de Pollard para resolver ECDLP em intervalos conhecidos.'};
+list.innerHTML=Object.keys(terms).map(t=>{const unlocked=STATE.diaryUnlocked.includes(t);return'<div class="diary-entry '+(unlocked?'':'locked')+'"><div class="diary-term">'+t+'</div><div class="diary-def">'+(unlocked?terms[t]:'🔒 Ainda não descoberto.')+'</div></div>'}).join('');
+}
+let currentSectorData=null;
+function enterSector(id){
+currentSectorData=SECTORS.find(s=>s.id===id);STATE.currentSector=id;
+document.getElementById('missionName').textContent='Setor '+id+' — '+currentSectorData.name;
+document.getElementById('missionConcept').textContent=currentSectorData.concept;
+document.getElementById('oracleText').textContent=currentSectorData.intro;
+const badge=document.getElementById('modeBadge');badge.style.display='inline-block';badge.className='mode-badge '+currentSectorData.mode;badge.textContent=currentSectorData.mode==='real'?'Matemática Real':'Analogia';
+document.getElementById('missionCompleteBtn').disabled=true;
+const body=document.getElementById('missionBody');body.innerHTML='';currentSectorData.builder(body);navigateTo('mission');
+}
+function markMissionReady(){document.getElementById('missionCompleteBtn').disabled=false}
+function finishMission(){
+const id=currentSectorData.id;
+if(!STATE.completed[id]){STATE.completed[id]=true;addXP(100);save();toast('⚡ +100 XP','Setor '+id+' restaurado!')}
+openQuiz(id);
+}
+
+/* =================================================================
+   QUIZ (9 setores)
+   ================================================================= */
+const QUIZZES={
+1:[{q:'Por que a Cifra de César é fácil de quebrar?',opts:['Só 25 chaves','Usa primos gigantes','Depende de GPUs'],correct:0,explain:'Com apenas 25 deslocamentos, um computador testa todos em segundos.'},{q:'O que a análise de frequência explora?',opts:['Tamanho da chave','Frequência de letras','Velocidade da GPU'],correct:1,explain:'O deslocamento preserva o padrão de frequência do idioma.'}],
+2:[{q:'Na criptografia simétrica, quem decifra?',opts:['Qualquer um','Quem tem a mesma chave','Quem tem GPU'],correct:1,explain:'A mesma chave cifra e decifra.'},{q:'Principal problema da simétrica?',opts:['É lenta','Troca segura da chave','Não pode ser em software'],correct:1,explain:'Se a chave for interceptada, toda comunicação fica comprometida.'}],
+3:[{q:'No protocolo dos dois cadeados, por que a caixa nunca viaja destrancada?',opts:['Sempre há um cadeado que só uma parte pode remover','Por estética','São decorativos'],correct:0,explain:'Em cada etapa, ao menos um cadeado que só uma pessoa possui permanece fechado.'},{q:'O que a chave pública resolve de verdade?',opts:['Nunca precisar de chave','Combinar uma chave secreta sem canal seguro','Armazenamento'],correct:1,explain:'O par de chaves matematicamente ligado permite comunicação segura sem encontro prévio.'}],
+4:[{q:'O que caracteriza uma curva elíptica criptográfica?',opts:['y² = x³ + ax + b sobre corpo finito','Um círculo','Uma reta'],correct:0,explain:'É essa equação modular que define o grupo.'},{q:'Como se soma P e Q geometricamente?',opts:['Multiplicando coordenadas','Reta secante + reflexão','Girando a curva'],correct:1,explain:'Secante + reflexão define a adição no grupo.'}],
+5:[{q:'Por que double‑and‑add é necessário?',opts:['Somar k vezes seria inviável','G muda','A curva tem só 26 pontos'],correct:0,explain:'Double‑and‑add faz em ~log₂(k) passos.'},{q:'Os bits de k controlam:',opts:['A cor','Duplicação ou duplicação+adição','Tamanho da tela'],correct:1,explain:'Cada bit decide se adicionamos o ponto acumulado.'}],
+6:[{q:'O que é o ECDLP?',opts:['Dado P e Q=k·P, achar k','Desenhar curva','Somar números pequenos'],correct:0,explain:'Essa assimetria sustenta a segurança da ECC.'},{q:'Por que GPUs não quebram uma chave secp256k1?',opts:['Espaço de chaves é astronômico','GPUs não sabem multiplicar','A curva muda'],correct:0,explain:'Mesmo com paralelismo, o tempo excede a idade do universo.'}],
+7:[{q:'De onde vem a chave pública?',opts:['Sorteada independente','Privada × G','Privada ao contrário'],correct:1,explain:'Chave pública = privada × G, fácil de calcular, inviável de reverter.'},{q:'Por que a privada deve ser aleatória?',opts:['Tradição','Se previsível, quebra a segurança','Números pares são proibidos'],correct:1,explain:'Previsibilidade reduz o espaço de busca e compromete a segurança.'}],
+8:[{q:'O que a assinatura ECDSA prova?',opts:['Mensagem verdadeira','Possui a privada e mensagem não alterada','Mensagem cifrada'],correct:1,explain:'A assinatura amarra a privada à mensagem exata.'},{q:'Diferença entre assinar e cifrar?',opts:['São a mesma coisa','Assinar prova autenticidade; cifrar esconde o conteúdo','Assinar é mais lento'],correct:1,explain:'Autenticidade e sigilo são propriedades independentes.'}],
+9:[{q:'Qual é a principal vantagem de usar coordenadas Jacobianas em um pipeline de ECC?',opts:['Reduz o número de inversões modulares','Aumenta a precisão numérica','Permite curvas maiores'],correct:0,explain:'Coordenadas Jacobianas atrasam as inversões para o final do pipeline, economizando operações caras.'},{q:'No método da caçada do canguru (Pollard Kangaroo), o que acontece quando um canguru "tame" e um "wild" se encontram?',opts:['Ocorre uma colisão que permite recuperar a chave privada','O algoritmo reinicia','A curva é alterada'],correct:0,explain:'A colisão entre os dois cangurus fornece a relação matemática que revela a chave privada no intervalo conhecido.'}],
+};
+
+let quizState=null;
+function openQuiz(sectorId){
+const questions=QUIZZES[sectorId]||[];
+quizState={sectorId,questions,idx:0,correctCount:0};
+document.getElementById('quiz-overlay').classList.remove('hidden');
+renderQuizQuestion();
+}
+function renderQuizQuestion(){
+const{questions,idx}=quizState;
+const card=document.getElementById('quizCard');
+if(idx>=questions.length){
+card.innerHTML='<div class="quiz-progress">CONCLUÍDO</div><div class="quiz-q">Setor consolidado! '+quizState.correctCount+'/'+questions.length+' corretas.</div><button class="btn primary" onclick="closeQuiz()">Continuar</button>';
+if(quizState.correctCount===questions.length){addXP(50);unlockAchievement('quiz100_'+quizState.sectorId,'Professor Honorário — 100% no Setor '+quizState.sectorId)}
+return;
+}
+const q=questions[idx];
+card.innerHTML='<div class="quiz-progress">PERGUNTA '+(idx+1)+' / '+questions.length+'</div><div class="quiz-q">'+q.q+'</div><div id="quizOpts"></div><div id="quizExplain" class="quiz-explain" style="display:none;"></div>';
+const optsDiv=document.getElementById('quizOpts');
+q.opts.forEach((opt,i)=>{const b=document.createElement('button');b.className='quiz-opt';b.textContent=opt;b.onclick=()=>answerQuiz(i);optsDiv.appendChild(b)});
+}
+function answerQuiz(i){
+const q=quizState.questions[quizState.idx];
+const opts=document.querySelectorAll('.quiz-opt');
+opts.forEach((b,idx)=>{b.onclick=null;if(idx===q.correct)b.classList.add('correct');else if(idx===i)b.classList.add('wrong')});
+if(i===q.correct)quizState.correctCount++;
+document.getElementById('quizExplain').style.display='block';document.getElementById('quizExplain').textContent=q.explain;
+const card=document.getElementById('quizCard');
+const nextBtn=document.createElement('button');nextBtn.className='btn primary';nextBtn.style.marginTop='14px';nextBtn.textContent='Próxima →';
+nextBtn.onclick=()=>{quizState.idx++;renderQuizQuestion()};card.appendChild(nextBtn);
+}
+function closeQuiz(){
+document.getElementById('quiz-overlay').classList.add('hidden');
+STATE.quizScores[quizState.sectorId]={acertos:quizState.correctCount,total:quizState.questions.length};save();
+if(Object.keys(STATE.completed).length>=9){navigateTo('survey')}else{navigateTo('map')}
+}
+
+/* =================================================================
+   SURVEY
+   ================================================================= */
+function submitSurvey(){
+const dificuldade=document.querySelector('input[name="dificuldade"]:checked');
+if(!dificuldade){toast('Atenção','Selecione a dificuldade antes de enviar.');return}
+STATE.dificuldade=dificuldade.value;
+STATE.feedback={
+interesse:document.getElementById('feedbackInteresse').value.trim(),
+melhoria:document.getElementById('feedbackMelhoria').value.trim(),
+livre:document.getElementById('feedbackLivre').value.trim()
+};
+STATE.surveyDone=true;save();
+const ok=saveResultsLocal();
+if(ok)toast('📤 Salvado','Dados armazenados localmente.');
+else toast('Erro','Falha ao salvar localmente.');
+navigateTo('end');
+}
+function renderEndAchievements(){
+const allAch=[
+{id:'caesar_break',label:'Quebra‑Códigos'},{id:'xor_master',label:'Mestre XOR'},{id:'lock_protocol',label:'Arquiteto de Cofres'},{id:'curve_explorer',label:'Explorador de Curvas'},{id:'double_add',label:'Arquiteto Escalar'},{id:'abyss_survivor',label:'Sobrevivente do Abismo'},{id:'keysmith',label:'Ferreiro de Chaves'},{id:'ecdsa_master',label:'Mestre da Assinatura'},{id:'pipeline_architect',label:'Arquiteto de Pipeline'},{id:'kangaroo_hunter',label:'Caçador de Cangurus'}
+];
+for(let i=1;i<=9;i++){if(STATE.quizScores[i]&&STATE.quizScores[i].acertos===STATE.quizScores[i].total){allAch.push({id:'quiz100_'+i,label:'Professor Honorário — Setor '+i})}}
+document.getElementById('endAchievements').innerHTML=allAch.map(a=>{const unlocked=STATE.achievements.includes(a.id);return'<div class="ach-card '+(unlocked?'unlocked':'locked')+'">'+(unlocked?'🏆':'🔒')+' '+a.label+'</div>'}).join('');
+}
+
+/* =================================================================
+   ADMIN
+   ================================================================= */
+function openAdmin(){ navigateTo('admin'); }
+async function adminLogin(){
+const pwd=document.getElementById('adminPassInput').value;
+const hash=await hashPassword(pwd);
+if(hash===ADMIN_HASH){
+document.getElementById('adminLoginView').style.display='none';
+document.getElementById('adminDashboardView').style.display='block';
+renderAdminDashboard();
+}else{
+document.getElementById('adminError').style.display='block';
+}
+}
+function renderAdminDashboard(){
+const dataKey='cipher_horizon_data';
+const data=JSON.parse(localStorage.getItem(dataKey)||'[]');
+const statsDiv=document.getElementById('adminStats');
+if(!data.length){statsDiv.innerHTML='<p style="color:var(--text-dim);">Nenhum dado coletado ainda.</p>';document.getElementById('adminTable').innerHTML='';return;}
+const total=data.length;
+const totalXP=data.reduce((s,x)=>s+(x.xp||0),0);
+const avgXP=Math.round(totalXP/total);
+const completed=data.filter(x=>(x.setoresConcluidos||0)>=9).length;
+const avgAge=Math.round(data.reduce((s,x)=>s+(x.idade||0),0)/total);
+statsDiv.innerHTML=`
+<div class="stat-grid">
+<div class="stat-card"><div class="num">${total}</div><div class="lbl">Participantes</div></div>
+<div class="stat-card"><div class="num">${avgXP}</div><div class="lbl">XP Médio</div></div>
+<div class="stat-card"><div class="num">${completed}</div><div class="lbl">Completaram (9/9)</div></div>
+<div class="stat-card"><div class="num">${avgAge}</div><div class="lbl">Idade Média</div></div>
+</div>`;
+let html='<table class="admin-table"><tr><th>Nome</th><th>Idade</th><th>Curso</th><th>XP</th><th>Setores</th><th>Dificuldade</th><th>Feedback</th></tr>';
+data.slice().reverse().forEach(p=>{
+const diff=p.dificuldade||'—';
+const fb=(p.feedback&&p.feedback.interesse)?p.feedback.interesse.slice(0,40)+'…':(p.feedback&&p.feedback.melhoria)?p.feedback.melhoria.slice(0,40)+'…':'—';
+html+=`<tr><td>${p.nome||'Anônimo'}</td><td>${p.idade||'?'}</td><td>${p.curso||'—'}</td><td>${p.xp||0}</td><td>${p.setoresConcluidos||0}/9</td><td>${diff}</td><td>${fb}</td></tr>`;
+});
+html+='</table>';
+document.getElementById('adminTable').innerHTML=html;
+}
+function exportAdminData(){
+const dataKey='cipher_horizon_data';
+const data=localStorage.getItem(dataKey);
+if(!data||data==='[]'){toast('Aviso','Nenhum dado para exportar.');return}
+const blob=new Blob([data],{type:'application/json'});
+const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='cipher_horizon_dados.json';a.click();
+toast('📥 Exportado','Arquivo JSON baixado.');
+}
+
+/* =================================================================
+   SETORES 1 a 8 (implementações completas)
+   ================================================================= */
+function buildSector1(body){
+const target="A REDE UMBRAL AGUARDA SUA CHAVE";const secretShift=7;const cipherText=CipherCore.caesarShift(target,secretShift);
+body.innerHTML=`
+<div class="panel"><span class="tag analogy">ANALOGIA / CIFRA CLÁSSICA REAL</span><div class="panel-title">Disco de César</div>
+<div class="cipher-container">
+<div class="cipher-wheel-wrap"><div class="cipher-wheel" id="cipherWheel"><canvas id="wheelCanvas" width="300" height="300"></canvas></div>
+<div style="text-align:center;margin-top:10px;font-family:var(--mono);font-size:14px;color:var(--neon-cyan);">Shift: <span id="shiftDisplay">0</span></div></div>
+<div class="cipher-controls"><div><label>Mensagem cifrada</label><input type="text" id="plainText" value="${cipherText}" style="font-size:16px;"></div>
+<div class="cipher-buttons"><button class="btn primary" id="decryptBtn">🔓 Descriptografar</button><button class="btn" id="encryptBtn">🔒 Criptografar</button></div>
+<div><label>Resultado</label><div class="result-box" id="cipherResult" style="font-size:18px;letter-spacing:1px;">${cipherText}</div></div>
+<div style="font-size:12px;color:var(--text-dim);">Arraste o disco ou use os botões.</div></div></div></div>
+<div class="panel"><div class="panel-title">Análise de Frequência</div><div id="freqBars" style="display:flex;align-items:flex-end;gap:2px;height:80px;margin-top:8px;"></div></div>
+<div class="panel"><div class="panel-title">Bancada Livre</div><div class="row"><div class="field" style="flex:2;"><label>Sua mensagem</label><input type="text" id="freeMsg" value="GUILDA DOS CRIPTOGRAFOS"></div><div class="field" style="flex:1;"><label>Shift</label><input type="number" id="freeShift" value="3" min="0" max="25"></div></div><div class="result-box" id="freeResult"></div></div>`;
+const canvas=document.getElementById('wheelCanvas');const ctx=canvas.getContext('2d');let currentShift=0,isDragging=false,startAngle=0;
+function drawWheel(shift){const w=canvas.width,h=canvas.height,cx=w/2,cy=h/2,radius=Math.min(w,h)/2-20;ctx.clearRect(0,0,w,h);const grad=ctx.createRadialGradient(cx,cy,0,cx,cy,radius);grad.addColorStop(0,'rgba(0,243,255,0.05)');grad.addColorStop(1,'rgba(0,0,0,0.4)');ctx.fillStyle=grad;ctx.beginPath();ctx.arc(cx,cy,radius,0,Math.PI*2);ctx.fill();ctx.strokeStyle='#00f3ff';ctx.lineWidth=2;ctx.beginPath();ctx.arc(cx,cy,radius,0,Math.PI*2);ctx.stroke();const letters='ABCDEFGHIJKLMNOPQRSTUVWXYZ',n=letters.length,angleStep=(2*Math.PI)/n,textRadius=radius*0.75;for(let i=0;i<n;i++){const angle=-Math.PI/2+i*angleStep+(shift*angleStep);const x=cx+textRadius*Math.cos(angle),y=cy+textRadius*Math.sin(angle);ctx.save();ctx.translate(x,y);ctx.rotate(angle+Math.PI/2);ctx.fillStyle=(i===0)?'#ffd700':'#eae7dc';ctx.font='bold 16px Orbitron, sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.shadowBlur=(i===0)?20:0;ctx.shadowColor='#ffd700';ctx.fillText(letters[i],0,0);ctx.restore();}ctx.shadowBlur=30;ctx.shadowColor='#00f3ff';ctx.fillStyle='#00f3ff';ctx.font='bold 36px Orbitron';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(letters[(shift%26+26)%26],cx,cy);ctx.shadowBlur=0;ctx.fillStyle='#ffd700';ctx.beginPath();ctx.moveTo(cx,20);ctx.lineTo(cx-8,36);ctx.lineTo(cx+8,36);ctx.closePath();ctx.fill();}
+function setShift(s){currentShift=((s%26)+26)%26;document.getElementById('shiftDisplay').textContent=currentShift;drawWheel(currentShift);updateDecrypt();}
+function getAngle(e){const rect=canvas.getBoundingClientRect();const cx=rect.left+rect.width/2,cy=rect.top+rect.height/2;let clientX,clientY;if(e.touches){clientX=e.touches[0].clientX;clientY=e.touches[0].clientY}else{clientX=e.clientX;clientY=e.clientY}return Math.atan2(clientY-cy,clientX-cx);}
+function onStart(e){e.preventDefault();isDragging=true;startAngle=getAngle(e);canvas.style.cursor='grabbing'}
+function onMove(e){if(!isDragging)return;e.preventDefault();const currentAngle=getAngle(e);let delta=currentAngle-startAngle;const step=2*Math.PI/26;const shiftDelta=Math.round(delta/step);if(shiftDelta!==0){setShift(currentShift+shiftDelta);startAngle=currentAngle}}
+function onEnd(e){isDragging=false;canvas.style.cursor='grab'}
+canvas.addEventListener('mousedown',onStart);window.addEventListener('mousemove',onMove);window.addEventListener('mouseup',onEnd);canvas.addEventListener('touchstart',onStart,{passive:false});window.addEventListener('touchmove',onMove,{passive:false});window.addEventListener('touchend',onEnd);
+const plainInput=document.getElementById('plainText'),resultBox=document.getElementById('cipherResult');
+function updateDecrypt(){const text=plainInput.value;const decrypted=CipherCore.caesarShift(text,-currentShift);resultBox.textContent=decrypted;updateFreq(decrypted);if(decrypted===target){resultBox.style.borderColor='#ffd700';markMissionReady();addDiary('Cifra de César');unlockAchievement('caesar_break','Quebra‑Códigos')}else{resultBox.style.borderColor=''}}
+function updateEncrypt(){const text=plainInput.value;const encrypted=CipherCore.caesarShift(text,currentShift);resultBox.textContent=encrypted;updateFreq(encrypted)}
+document.getElementById('decryptBtn').onclick=updateDecrypt;document.getElementById('encryptBtn').onclick=updateEncrypt;
+function updateFreq(text){const bars=document.getElementById('freqBars');const counts={};for(const ch of text.toUpperCase())if(/[A-Z]/.test(ch))counts[ch]=(counts[ch]||0)+1;const max=Math.max(1,...Object.values(counts));bars.innerHTML='ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('').map(l=>{const h=((counts[l]||0)/max*100).toFixed(0);return'<div style="flex:1;height:'+Math.max(2,h)+'%;background:#ffd700;opacity:0.7;border-radius:2px 2px 0 0;" title="'+l+': '+(counts[l]||0)+'"></div>'}).join('');}
+function updateFree(){const msg=document.getElementById('freeMsg').value;const s=parseInt(document.getElementById('freeShift').value)||0;document.getElementById('freeResult').textContent=CipherCore.caesarShift(msg,s)}
+document.getElementById('freeMsg').oninput=updateFree;document.getElementById('freeShift').oninput=updateFree;updateFree();
+setShift(secretShift);
+}
+
+function buildSector2(body){
+body.innerHTML=`<div class="panel"><span class="tag real">MATEMÁTICA REAL</span><div class="panel-title">Câmara XOR</div>
+<div class="row"><div class="field" style="flex:2;"><label>Mensagem</label><input type="text" id="xorMsg" value="REDE UMBRAL"></div>
+<div class="field" style="flex:1;"><label>Chave</label><input type="text" id="xorKey" value="GUILD" maxlength="8"></div></div>
+<div style="margin:14px 0;"><button class="btn primary" id="xorEncrypt">🔒 Cifrar XOR</button><button class="btn" id="xorDecrypt">🔓 Decifrar XOR</button></div>
+<div><label>Resultado (hex)</label><div class="result-box" id="xorResult">---</div></div>
+<div class="plain">Cada byte é combinado com XOR com a chave. Repetir com a mesma chave recupera o original.</div></div>
+<div class="panel"><div class="panel-title">Demonstração</div><div id="xorDemo" style="font-family:var(--mono);font-size:12px;color:var(--text-dim);line-height:1.8;"></div></div>
+<div class="panel"><div class="panel-title">Desafio</div><p style="font-size:13px;color:var(--text-dim);margin-bottom:10px;">Cifrado <b style="color:var(--neon-cyan)">1a0d151c</b> com chave <b>AB</b>. Qual é a mensagem?</p>
+<div class="row"><div class="field" style="flex:1;"><input type="text" id="xorChallenge" placeholder="Digite..."></div><button class="btn primary" onclick="checkXorChallenge()">Verificar</button></div>
+<div id="xorFeedback" style="margin-top:8px;font-size:13px;"></div></div>`;
+function updateXor(){const msg=document.getElementById('xorMsg').value;const key=document.getElementById('xorKey').value;if(!msg||!key)return;const hex=CipherCore.xorEncryptHex(msg,key);document.getElementById('xorResult').textContent=hex;let demoHTML='<table class="compare-table"><tr><th>Caractere</th><th>ASCII</th><th>Chave</th><th>XOR</th><th>Resultado</th></tr>';const msgB=CipherCore.textToBytes(msg),keyB=CipherCore.textToBytes(key);for(let i=0;i<Math.min(msgB.length,8);i++){const r=msgB[i]^keyB[i%keyB.length];demoHTML+='<tr><td>'+msg[i]+'</td><td>'+msgB[i].toString(16).padStart(2,'0')+'</td><td>'+key[i%key.length]+' ('+keyB[i%keyB.length].toString(16)+')</td><td style="color:var(--neon-cyan)">'+r.toString(16).padStart(2,'0')+'</td><td>'+String.fromCharCode(r)+'</td></tr>';}demoHTML+='</table>';document.getElementById('xorDemo').innerHTML=demoHTML;}
+document.getElementById('xorEncrypt').onclick=updateXor;document.getElementById('xorDecrypt').onclick=function(){const hex=document.getElementById('xorResult').textContent;const key=document.getElementById('xorKey').value;if(hex==='---'||!key)return;try{const plain=CipherCore.xorDecryptHex(hex,key);document.getElementById('xorResult').textContent=plain+' (decifrado)'}catch(e){document.getElementById('xorResult').textContent='Erro: chave inválida'}};document.getElementById('xorMsg').oninput=updateXor;document.getElementById('xorKey').oninput=updateXor;updateXor();
+window.checkXorChallenge=function(){const ans=document.getElementById('xorChallenge').value.toUpperCase().trim();const fb=document.getElementById('xorFeedback');try{const decrypted=CipherCore.xorDecryptHex('1a0d151c','AB');if(ans===decrypted.toUpperCase()){fb.innerHTML='<span style="color:var(--neon-cyan)">✔ Correto! Mensagem: <b>'+decrypted+'</b></span>';markMissionReady();addDiary('XOR / Simétrica');unlockAchievement('xor_master','Mestre XOR')}else{fb.innerHTML='<span style="color:#e24e4e">✘ Tente novamente.</span>'}}catch(e){fb.innerHTML='<span style="color:#e24e4e">Erro.</span>'}};
+}
+
+function buildSector3(body){
+body.innerHTML=`<div class="panel"><span class="tag analogy">ANALOGIA</span><div class="panel-title">Protocolo dos Dois Cadeados</div>
+<div id="lockAnim"></div>
+<div style="margin-top:16px;">
+<button class="btn" onclick="lockStep(0)">1. Alice tranca (A)</button>
+<button class="btn" onclick="lockStep(1)">2. Bob tranca (B)</button>
+<button class="btn" onclick="lockStep(2)">3. Alice destranca A</button>
+<button class="btn primary" onclick="lockStep(3)">4. Bob destranca B</button>
+</div></div>
+<div class="panel"><div class="panel-title">Por que funciona?</div>
+<div class="step-box"><div class="step-num">PASSO 1</div>Caixa viaja com cadeado de Alice. Bob pode adicionar o seu.</div>
+<div class="step-box"><div class="step-num">PASSO 2</div>Dois cadeados. Sempre pelo menos um trancado.</div>
+<div class="step-box"><div class="step-num">PASSO 3</div>Alice remove o seu. A caixa ainda está trancada pelo de Bob.</div>
+<div class="step-box"><div class="step-num">PASSO 4</div>Bob remove o seu e abre a caixa. <b>Nenhuma chave foi trocada.</b></div></div>
+<div class="panel"><div class="panel-title">Propriedade</div><p style="font-size:13px;color:var(--text-dim);margin-bottom:10px;">Qual propriedade permite que a ordem dos cadeados não importe?</p>
+<button class="btn" onclick="lockAnswer('comutatividade')">Comutatividade</button>
+<button class="btn" onclick="lockAnswer('associatividade')">Associatividade</button>
+<div id="lockFeedback" style="margin-top:10px;font-size:13px;"></div></div>`;
+const steps=[{alice:'🔒',box:'📦',bob:'',desc:'Alice tranca a caixa com seu cadeado A.'},{alice:'🔒',box:'🔒',bob:'🔒',desc:'Bob adiciona seu cadeado B.'},{alice:'🔓',box:'🔒',bob:'🔒',desc:'Alice remove seu cadeado A.'},{alice:'',box:'📦 ✉️',bob:'🔓',desc:'Bob remove seu cadeado B e lê a mensagem!'}];
+window.lockStep=function(n){const s=steps[n];document.getElementById('lockAnim').innerHTML='<div class="lock-visual"><div style="text-align:center;"><div style="font-size:12px;color:var(--text-dim);margin-bottom:4px;">Alice</div><div class="lock-box '+(s.alice?'locked':'')+'">'+(s.alice||'👩')+'</div></div><div class="arrow-anim">→</div><div style="text-align:center;"><div style="font-size:12px;color:var(--text-dim);margin-bottom:4px;">Caixa</div><div class="lock-box" style="font-size:36px;">'+s.box+'</div></div><div class="arrow-anim">→</div><div style="text-align:center;"><div style="font-size:12px;color:var(--text-dim);margin-bottom:4px;">Bob</div><div class="lock-box '+(s.bob?'locked':'')+'">'+(s.bob||'👨')+'</div></div></div><p style="text-align:center;color:var(--neon-cyan);font-size:13px;margin-top:12px;">'+s.desc+'</p>';if(n===3){markMissionReady();addDiary('Chave Pública (analogia)');unlockAchievement('lock_protocol','Arquiteto de Cofres')}};
+window.lockAnswer=function(ans){const fb=document.getElementById('lockFeedback');if(ans==='comutatividade')fb.innerHTML='<span style="color:var(--neon-cyan)">✔ Correto! A comutatividade garante A*B = B*A.</span>';else fb.innerHTML='<span style="color:#e24e4e">✘ A associatividade não garante comutatividade. Tente outra.</span>'};
+lockStep(0);
+}
+
+function buildSector4(body){
+body.innerHTML=`<div class="panel"><span class="tag real">MATEMÁTICA REAL</span><div class="panel-title">Adição em Curva Elíptica</div>
+<canvas id="ecCanvas" class="visual-canvas" width="600" height="300"></canvas>
+<div style="margin-top:10px;"><button class="btn" onclick="ecAddPoints()">Somar P+Q</button><button class="btn" onclick="ecDoubleP()">Duplicar 2P</button><button class="btn" onclick="ecReset()">Resetar</button></div>
+<div id="ecExplain" style="margin-top:10px;font-size:13px;color:var(--neon-cyan);min-height:20px;"></div></div>
+<div class="panel"><div class="panel-title">Regra</div><div class="step-box"><div class="step-num">PASSO 1</div>Reta secante por P e Q.</div><div class="step-box"><div class="step-num">PASSO 2</div>Intersecção R.</div><div class="step-box"><div class="step-num">PASSO 3</div>Reflita R sobre o eixo X → P+Q.</div></div>
+<div class="panel"><div class="panel-title">Desafio</div><p style="font-size:13px;color:var(--text-dim);">Se a reta for vertical (P e Q com x iguais, y opostos), qual é o resultado?</p>
+<button class="btn" onclick="ecAnswer('infinito')">Ponto no infinito</button><button class="btn" onclick="ecAnswer('zero')">Zero</button>
+<div id="ecFeedback" style="margin-top:10px;font-size:13px;"></div></div>`;
+let ecP={x:2,y:3},ecQ={x:5,y:1},ecStep=0;const a=-2,b=4;
+function drawEC(){const c=document.getElementById('ecCanvas'),ctx=c.getContext('2d');ctx.clearRect(0,0,c.width,c.height);const pad=40,w=c.width-2*pad,h=c.height-2*pad,scaleX=w/12,scaleY=h/8;function tx(x){return pad+(x+1)*scaleX}function ty(y){return c.height/2-y*scaleY}ctx.strokeStyle='#2b334d';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(pad,c.height/2);ctx.lineTo(c.width-pad,c.height/2);ctx.stroke();ctx.beginPath();ctx.moveTo(c.width/2,pad);ctx.lineTo(c.width/2,c.height-pad);ctx.stroke();ctx.strokeStyle='rgba(0,243,255,0.5)';ctx.lineWidth=2;for(let sign of[1,-1]){ctx.beginPath();for(let px=0;px<=600;px++){const x=(px/600)*12-1;const yy2=x*x*x+a*x+b;if(yy2<0)continue;const y=sign*Math.sqrt(yy2);if(px===0)ctx.moveTo(tx(x),ty(y));else ctx.lineTo(tx(x),ty(y));}ctx.stroke();}function drawPoint(pt,label,color){ctx.fillStyle=color;ctx.beginPath();ctx.arc(tx(pt.x),ty(pt.y),6,0,Math.PI*2);ctx.fill();ctx.fillStyle='#eae7dc';ctx.font='12px JetBrains Mono';ctx.fillText(label,tx(pt.x)+10,ty(pt.y)-10)}drawPoint(ecP,'P','#ffd700');drawPoint(ecQ,'Q','#bc13fe');if(ecStep>=1){drawPoint({x:ecP.x+ecQ.x,y:-(ecP.y+ecQ.y)},'P+Q','#00f3ff');ctx.strokeStyle='rgba(255,215,0,0.4)';ctx.setLineDash([5,5]);ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(tx(-1),ty(ecP.y+(ecP.y+ecQ.y)/(ecP.x-ecQ.x)*(-1-ecP.x)));ctx.lineTo(tx(11),ty(ecP.y+(ecP.y+ecQ.y)/(ecP.x-ecQ.x)*(11-ecP.x)));ctx.stroke();ctx.setLineDash([])}}
+window.ecAddPoints=function(){ecStep=1;drawEC();document.getElementById('ecExplain').textContent='Secante → P+Q';markMissionReady();addDiary('Curva Elíptica');unlockAchievement('curve_explorer','Explorador de Curvas')};
+window.ecDoubleP=function(){ecStep=2;ecQ={x:ecP.x,y:ecP.y};drawEC();document.getElementById('ecExplain').textContent='Tangente → 2P'};
+window.ecReset=function(){ecStep=0;ecP={x:2,y:3};ecQ={x:5,y:1};drawEC();document.getElementById('ecExplain').textContent=''};
+window.ecAnswer=function(ans){const fb=document.getElementById('ecFeedback');if(ans==='infinito')fb.innerHTML='<span style="color:var(--neon-cyan)">✔ Correto! Ponto no infinito.</span>';else fb.innerHTML='<span style="color:#e24e4e">✘ Não é zero. É o ponto no infinito.</span>'};
+setTimeout(drawEC,100);
+}
+
+function buildSector5(body){
+body.innerHTML=`<div class="panel"><span class="tag real">MATEMÁTICA REAL</span><div class="panel-title">Double‑and‑Add</div>
+<p style="font-size:13.5px;color:var(--text-dim);margin-bottom:14px;">Multiplicar k·P sem somar P k vezes.</p>
+<div class="row"><div class="field" style="flex:1;"><label>k</label><input type="number" id="daK" value="13" min="1" max="1000"></div><button class="btn primary" onclick="runDoubleAdd()">Executar</button></div>
+<div id="daSteps" style="margin-top:14px;"></div></div>
+<div class="panel"><div class="panel-title">secp256k1</div><table class="compare-table"><tr><th>Parâmetro</th><th>Valor</th></tr><tr><td>p</td><td>2<sup>256</sup> - 2<sup>32</sup> - 977</td></tr><tr><td>a</td><td>0</td></tr><tr><td>b</td><td>7</td></tr><tr><td>Gx</td><td style="font-size:10px;">55066...29240</td></tr></table></div>`;
+window.runDoubleAdd=function(){const k=parseInt(document.getElementById('daK').value)||13;if(k>10000){toast('Limite','k máximo 10000');return}let result=0,acc=1;let bits=k.toString(2);let html='<div style="font-family:var(--mono);font-size:12px;"><div style="color:var(--neon-gold);margin-bottom:8px;">k='+k+'='+bits+'₂ ('+bits.length+' bits)</div>';for(let i=0;i<bits.length;i++){const bit=bits[i];html+='<div style="padding:6px;background:#0f1526;border-radius:6px;margin:4px 0;"><span style="color:var(--text-dim)">Bit '+i+': <b style="color:'+(bit==='1'?'var(--neon-cyan)':'#e24e4e')+'">'+bit+'</b></span> ';if(bit==='1'){result+=acc;html+='→ Adiciona '+acc+'P. Acumulado: <b style="color:var(--neon-cyan)">'+result+'P</b>'}else{html+='→ Não adiciona. Acumulado: <b>'+result+'P</b>'}acc*=2;html+=' <span style="color:var(--text-dim)">(próximo: '+acc+'P)</span></div>'}html+='<div style="color:var(--neon-gold);margin-top:8px;"><b>Resultado final: '+result+'P</b> em '+bits.length+' passos.</div></div>';document.getElementById('daSteps').innerHTML=html;markMissionReady();addDiary('Double‑and‑Add');unlockAchievement('double_add','Arquiteto Escalar')};
+runDoubleAdd();
+}
+
+function buildSector6(body){
+body.innerHTML=`<div class="panel"><span class="tag real">MATEMÁTICA REAL</span><div class="panel-title">O Abismo Discreto (ECDLP)</div>
+<p style="font-size:13.5px;color:var(--text-dim);margin-bottom:14px;">Dados P e Q=k·P, encontrar k é o ECDLP. Propositalmente difícil.</p>
+<table class="compare-table"><tr><th>Operação</th><th>Direção</th><th>Tempo</th></tr><tr><td>k·P = Q</td><td style="color:var(--neon-cyan)">→ Fácil</td><td>~256 passos</td></tr><tr><td>Dados P,Q achar k</td><td style="color:#e24e4e">→ Impossível</td><td>~2<sup>128</sup> op.</td></tr></table>
+<div class="plain">Essa assimetria sustenta a segurança da ECC.</div></div>
+<div class="panel"><div class="panel-title">Escala</div>
+<div class="progress-bar"><div class="progress-fill" style="width:0.0000000000001%"></div></div>
+<p style="font-size:12px;color:var(--text-dim);text-align:center;">Espaço de chaves secp256k1: 2<sup>256</sup> ≈ 1.16×10<sup>77</sup></p>
+</div>
+<div class="panel"><div class="panel-title">Por que GPUs não resolvem?</div><p style="font-size:13px;color:var(--text-dim);">Mesmo 10 bilhões de GPUs, cada uma testando 10 bilhões de chaves/s, levariam muito mais que a idade do universo.</p>
+<button class="btn gold" onclick="markMissionReady();addDiary('ECDLP');unlockAchievement('abyss_survivor','Sobrevivente do Abismo')">Entendi</button></div>`;
+}
+
+function buildSector7(body){
+body.innerHTML=`<div class="panel"><span class="tag real">MATEMÁTICA REAL</span><div class="panel-title">Geração de Par de Chaves</div>
+<button class="btn primary" id="genBtn7">⚡ Gerar Par de Chaves</button>
+<div id="keyDisplay7" style="display:none;margin-top:14px;">
+<div style="margin-bottom:10px;"><label style="color:var(--neon-purple);font-family:var(--mono);font-size:11px;">CHAVE PRIVADA</label><div class="key-display" id="privKeyDisplay7" style="color:var(--neon-purple);"></div></div>
+<div style="margin-bottom:10px;"><label style="color:var(--neon-cyan);font-family:var(--mono);font-size:11px;">CHAVE PÚBLICA</label><div class="key-display" id="pubKeyDisplay7"></div></div>
+<div class="plain">Pública = privada × G. Inviável reverter.</div>
+</div></div>`;
+document.getElementById('genBtn7').onclick=function(){const priv=CipherCore.generatePrivateKey();document.getElementById('privKeyDisplay7').textContent='0x'+priv.toString(16);const pub=CipherCore.scalarMul(priv,CipherCore.secp256k1.G,CipherCore.secp256k1.a,CipherCore.secp256k1.p).point;if(pub!=='INF'){document.getElementById('pubKeyDisplay7').textContent='04 '+pub[0].toString(16).slice(0,32)+'...'}document.getElementById('keyDisplay7').style.display='block';markMissionReady();addDiary('Chave Privada/Pública (Bitcoin)');unlockAchievement('keysmith','Ferreiro de Chaves')};
+}
+
+function buildSector8(body){
+body.innerHTML=`<div class="panel"><span class="tag real">MATEMÁTICA REAL</span><div class="panel-title">ECDSA</div>
+<div class="row"><div class="field" style="flex:2;"><label>Mensagem</label><input type="text" id="ecdsaMsg8" value="Restaurar a Rede Umbral"></div><button class="btn primary" id="signBtn8">✒️ Assinar</button></div>
+<div id="sigDisplay8" style="display:none;margin-top:14px;">
+<div style="margin-bottom:10px;"><label style="font-family:var(--mono);font-size:11px;color:var(--neon-cyan);">ASSINATURA (r,s)</label><div class="key-display" id="sigRS8"></div></div>
+<button class="btn" id="verifyBtn8">✔ Verificar</button>
+<div id="verifyResult8" style="margin-top:10px;font-size:14px;"></div></div></div>
+<div class="panel"><div class="panel-title">Ponta‑a‑Ponta</div><p style="font-size:13px;color:var(--text-dim);line-height:1.7;">Alice cifra com a pública de Bob. Só Bob decifra com sua privada. E2E.</p></div>`;
+let lastSig8=null,lastPub8=null,lastMsg8='';
+document.getElementById('signBtn8').onclick=async function(){const msg=document.getElementById('ecdsaMsg8').value;lastMsg8=msg;const priv=CipherCore.generatePrivateKey();lastPub8=CipherCore.scalarMul(priv,CipherCore.secp256k1.G,CipherCore.secp256k1.a,CipherCore.secp256k1.p).point;try{lastSig8=await CipherCore.ecdsaSign(msg,priv);document.getElementById('sigRS8').innerHTML='<div style="color:var(--neon-cyan);font-size:12px;">r: '+lastSig8.r.toString(16).slice(0,20)+'...</div><div style="color:var(--neon-purple);font-size:12px;">s: '+lastSig8.s.toString(16).slice(0,20)+'...</div>';document.getElementById('sigDisplay8').style.display='block';markMissionReady();addDiary('ECDSA');unlockAchievement('ecdsa_master','Mestre da Assinatura')}catch(e){toast('Erro','Falha na assinatura')}};
+document.getElementById('verifyBtn8').onclick=async function(){if(!lastSig8){document.getElementById('verifyResult8').innerHTML='<span style="color:#e24e4e">Assine primeiro!</span>';return}try{const ok=await CipherCore.ecdsaVerify(lastMsg8,lastSig8,lastPub8);document.getElementById('verifyResult8').innerHTML=ok?'<span style="color:var(--neon-cyan)">✔ Válida!</span>':'<span style="color:#e24e4e">✘ Inválida.</span>'}catch(e){document.getElementById('verifyResult8').innerHTML='<span style="color:#e24e4e">Erro.</span>'}};
+}
+
+/* =================================================================
+   SETOR 9 — PIPELINE + BATCH INVERSION + KANGAROO HUNT
+   ================================================================= */
+function buildSector9(body){
+body.innerHTML=`
+<div class="panel"><span class="tag real">MATEMÁTICA REAL</span><div class="panel-title">Pipeline Geométrico + Caçada do Canguru</div>
+<p style="font-size:13.5px;color:var(--text-dim);margin-bottom:14px;">O motor de busca ECC combina várias técnicas do seu artigo.</p>
+<div class="pipeline-flow" id="pipelineFlow9">
+<div class="pipe-step" data-step="0"><span class="step-icon">🧮</span><span class="step-name">Campo Finito</span><span class="step-desc">Aritmética modular</span></div>
+<div class="pipe-step" data-step="1"><span class="step-icon">📐</span><span class="step-name">Jacobianas</span><span class="step-desc">Coordenadas projetivas</span></div>
+<div class="pipe-step" data-step="2"><span class="step-icon">⚡</span><span class="step-name">Batch Inversion</span><span class="step-desc">Inversão em lote</span></div>
+<div class="pipe-step" data-step="3"><span class="step-icon">🦘</span><span class="step-name">Random Walk</span><span class="step-desc">Caminhada Kangaroo</span></div>
+<div class="pipe-step" data-step="4"><span class="step-icon">🔍</span><span class="step-name">Filtro DP</span><span class="step-desc">Distinguished Points</span></div>
+<div class="pipe-step" data-step="5"><span class="step-icon">💾</span><span class="step-name">Persistência</span><span class="step-desc">Armazenamento</span></div>
+<div class="pipe-step" data-step="6"><span class="step-icon">🎯</span><span class="step-name">Busca</span><span class="step-desc">Colisão e recuperação</span></div>
+</div>
+<button class="btn primary" id="runPipelineBtn9">▶ Executar Pipeline</button>
+<div class="result-box" id="pipelineLog9">Aguardando...</div>
+</div>
+<div class="panel"><div class="panel-title">Batch Inversion</div>
+<div class="row"><div class="field" style="flex:1;"><label>Número de inversões</label><input type="number" id="batchN9" value="10" min="2" max="100"></div><button class="btn primary" id="batchRunBtn9">⚡ Calcular Ganho</button></div>
+<div id="batchResult9" style="margin-top:10px;">
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+<div class="panel" style="padding:12px;"><div style="color:var(--text-dim);font-size:12px;">Inversões individuais</div><div id="individualCost9" style="font-family:var(--serif);font-size:24px;color:var(--neon-purple);">—</div></div>
+<div class="panel" style="padding:12px;"><div style="color:var(--text-dim);font-size:12px;">Batch Inversion</div><div id="batchCost9" style="font-family:var(--serif);font-size:24px;color:var(--neon-cyan);">—</div></div>
+</div>
+<div class="progress-bar"><div class="progress-fill" id="batchGainBar9" style="width:0%;"></div></div>
+<div style="text-align:center;font-size:13px;color:var(--text-dim);">Ganho de performance</div>
+</div></div>
+<div class="panel"><div class="panel-title">Caçada do Canguru</div>
+<p style="font-size:13.5px;color:var(--text-dim);margin-bottom:10px;">Encontre a chave k no intervalo [1,100] tal que k·G = Q.</p>
+<div id="kangarooResult" class="result-box" style="min-height:60px;">Aguardando...</div>
+<button class="btn gold" id="kangarooBtn9">🦘 Iniciar Caçada</button>
+</div>`;
+// Pipeline
+let pipelineInterval9=null;
+document.getElementById('runPipelineBtn9').onclick=function(){
+const steps=document.querySelectorAll('#pipelineFlow9 .pipe-step');
+let current=0;if(pipelineInterval9)clearInterval(pipelineInterval9);
+document.getElementById('pipelineLog9').textContent='Iniciando...';
+pipelineInterval9=setInterval(()=>{
+steps.forEach((el,i)=>{el.classList.toggle('active',i===current)});
+document.getElementById('pipelineLog9').textContent='Etapa '+(current+1)+'/7: '+steps[current].querySelector('.step-name').textContent;
+current++;
+if(current>=steps.length){clearInterval(pipelineInterval9);pipelineInterval9=null;document.getElementById('pipelineLog9').textContent='✅ Pipeline concluído!';markMissionReady();addDiary('Pipeline CUDA');addDiary('Batch Inversion');unlockAchievement('pipeline_architect','Arquiteto de Pipeline')}},700);
+};
+document.getElementById('batchRunBtn9').onclick=function(){const n=parseInt(document.getElementById('batchN9').value)||10;const individual=n*100;const batch=100+3*n;const gain=((individual-batch)/individual*100).toFixed(1);document.getElementById('individualCost9').textContent=individual+' ops';document.getElementById('batchCost9').textContent=batch+' ops';document.getElementById('batchGainBar9').style.width=Math.min(gain,100)+'%';toast('⚡ Batch','Ganho de '+gain+'%')};
+document.getElementById('kangarooBtn9').onclick=function(){const log=document.getElementById('kangarooResult');log.textContent='🦘 Caçando...';setTimeout(()=>{try{const a=2n,b=3n,p=97n;const G=CipherCore.allCurvePoints(a,b,p)[0];const k=BigInt(Math.floor(Math.random()*50)+10);const Q=CipherCore.scalarMul(k,G,a,p).point;const found=CipherCore.kangarooSearch(G,Q,a,p,1n,100n,2000);if(found!==null&&found===k){log.textContent='✅ Sucesso! k='+found;addDiary('Caçada do Canguru');unlockAchievement('kangaroo_hunter','Caçador de Cangurus');markMissionReady()}else{log.textContent='❌ Falhou. (k='+k+')'}}catch(e){log.textContent='Erro: '+e.message}},500)};
+}
+
+/* =================================================================
+   PARTÍCULAS DE FUNDO
+   ================================================================= */
+(function(){const c=document.getElementById('particles'),ctx=c.getContext('2d');let w,h;function resize(){w=c.width=window.innerWidth;h=c.height=window.innerHeight}window.addEventListener('resize',resize);resize();const p=[];for(let i=0;i<80;i++)p.push({x:Math.random()*w,y:Math.random()*h,vx:(Math.random()-.5)*.3,vy:(Math.random()-.5)*.3,r:Math.random()*1.8+.5,a:Math.random()*.6+.2});function draw(){ctx.clearRect(0,0,w,h);p.forEach(q=>{q.x+=q.vx;q.y+=q.vy;if(q.x<0)q.x=w;if(q.x>w)q.x=0;if(q.y<0)q.y=h;if(q.y>h)q.y=0;ctx.fillStyle='rgba(0,243,255,'+q.a+')';ctx.beginPath();ctx.arc(q.x,q.y,q.r,0,Math.PI*2);ctx.fill()});requestAnimationFrame(draw)}draw()})();
+
+/* =================================================================
+   BOOT
+   ================================================================= */
+loadSave();document.getElementById('xpVal').textContent=STATE.xp;
+setTimeout(()=>{document.getElementById('loader').classList.add('hidden')},1500);
+restoreScene();
+</script>
+</body>
+</html>
